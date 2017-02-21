@@ -30,7 +30,7 @@
 
 
 /*! \file egs_input.h
- *  \brief EGS_Input header file
+ *  \brief EGS_Input class header file
  *  \IK
  */
 
@@ -321,7 +321,7 @@ public:
       if some error occured.
      */
     int getInput(const string &key, const vector<string> &allowed,
-           int def=0, bool *found=0) const;
+                 int def=0, bool *found=0) const;
 
     /*! Is this a property named \a key? */
     bool isA(const string &key) const;

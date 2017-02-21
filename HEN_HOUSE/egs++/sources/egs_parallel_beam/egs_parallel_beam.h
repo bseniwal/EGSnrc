@@ -23,7 +23,7 @@
 #
 #  Author:          Iwan Kawrakow, 2005
 #
-#  Contributors:
+#  Contributors:    Reid Townson
 #
 ###############################################################################
 */
@@ -45,22 +45,22 @@
 
 #ifdef WIN32
 
-#ifdef BUILD_PARALLEL_BEAM_DLL
-#define EGS_PARALLEL_BEAM_EXPORT __declspec(dllexport)
-#else
-#define EGS_PARALLEL_BEAM_EXPORT __declspec(dllimport)
-#endif
-#define EGS_PARALLEL_BEAM_LOCAL
+    #ifdef BUILD_PARALLEL_BEAM_DLL
+        #define EGS_PARALLEL_BEAM_EXPORT __declspec(dllexport)
+    #else
+        #define EGS_PARALLEL_BEAM_EXPORT __declspec(dllimport)
+    #endif
+    #define EGS_PARALLEL_BEAM_LOCAL
 
 #else
 
-#ifdef HAVE_VISIBILITY
-#define EGS_PARALLEL_BEAM_EXPORT __attribute__ ((visibility ("default")))
-#define EGS_PARALLEL_BEAM_LOCAL  __attribute__ ((visibility ("hidden")))
-#else
-#define EGS_PARALLEL_BEAM_EXPORT
-#define EGS_PARALLEL_BEAM_LOCAL
-#endif
+    #ifdef HAVE_VISIBILITY
+        #define EGS_PARALLEL_BEAM_EXPORT __attribute__ ((visibility ("default")))
+        #define EGS_PARALLEL_BEAM_LOCAL  __attribute__ ((visibility ("hidden")))
+    #else
+        #define EGS_PARALLEL_BEAM_EXPORT
+        #define EGS_PARALLEL_BEAM_LOCAL
+    #endif
 
 #endif
 
@@ -95,9 +95,35 @@ from the RZ series of user codes and sources 0 and 1
 in DOSXYZnrc can be reproduced with
 the parallel beam source from the EGSnrc C++ class library.
 
+A simple example:
+\verbatim
+:start source definition:
+    :start source:
+        library = egs_parallel_beam
+        name = my_source
+        :start shape:
+            type = cylinder
+            radius   = 1
+            height   = 2
+            axis     = 0 0 1
+            midpoint = 0
+        :stop shape:
+        direction = 0 0 1
+        charge = 0
+        :start spectrum:
+            type = monoenergetic
+            energy = 6
+        :stop spectrum:
+    :stop source:
+
+    simulation source = my_source
+
+:stop source definition:
+\endverbatim
+\image html egs_parallel_beam.png "A simple example"
 */
 class EGS_PARALLEL_BEAM_EXPORT EGS_ParallelBeam :
-          public EGS_BaseSimpleSource {
+    public EGS_BaseSimpleSource {
 
 public:
 
@@ -107,9 +133,10 @@ public:
     a shape \a Shape
     */
     EGS_ParallelBeam(int Q, EGS_BaseSpectrum *Spec, EGS_BaseShape *Shape,
-            const string &Name="", EGS_ObjectFactory *f=0) :
-            EGS_BaseSimpleSource(Q,Spec,Name,f), shape(Shape), uo(0,0,1) {
-            setUp(); };
+                     const string &Name="", EGS_ObjectFactory *f=0) :
+        EGS_BaseSimpleSource(Q,Spec,Name,f), shape(Shape), uo(0,0,1) {
+        setUp();
+    };
 
     /*! \brief Constructor
 
@@ -121,17 +148,27 @@ public:
     };
 
     void getPositionDirection(EGS_RandomGenerator *rndm,
-            EGS_Vector &x, EGS_Vector &u, EGS_Float &wt) {
-        x = shape->getRandomPoint(rndm); u = uo; wt = 1;
+                              EGS_Vector &x, EGS_Vector &u, EGS_Float &wt) {
+        x = shape->getRandomPoint(rndm);
+        u = uo;
+        wt = 1;
     };
 
-    EGS_Float getFluence() const { return count/shape->area(); };
+    EGS_Float getFluence() const {
+        return count/shape->area();
+    };
 
-    bool storeFluenceState(ostream &) const { return true; };
+    bool storeFluenceState(ostream &) const {
+        return true;
+    };
 
-    bool setFluenceState(istream &) { return true; };
+    bool setFluenceState(istream &) {
+        return true;
+    };
 
-    bool isValid() const { return (s != 0 && shape != 0); };
+    bool isValid() const {
+        return (s != 0 && shape != 0);
+    };
 
 protected:
 

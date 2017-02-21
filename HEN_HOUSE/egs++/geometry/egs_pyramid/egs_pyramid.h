@@ -24,6 +24,7 @@
 #  Author:          Iwan Kawrakow, 2005
 #
 #  Contributors:    Blake Walters
+#                   Reid Townson
 #
 ###############################################################################
 */
@@ -42,22 +43,22 @@
 
 #ifdef WIN32
 
-#ifdef BUILD_PYRAMID_DLL
-#define EGS_PYRAMID_EXPORT __declspec(dllexport)
-#else
-#define EGS_PYRAMID_EXPORT __declspec(dllimport)
-#endif
-#define EGS_PYRAMID_LOCAL
+    #ifdef BUILD_PYRAMID_DLL
+        #define EGS_PYRAMID_EXPORT __declspec(dllexport)
+    #else
+        #define EGS_PYRAMID_EXPORT __declspec(dllimport)
+    #endif
+    #define EGS_PYRAMID_LOCAL
 
 #else
 
-#ifdef HAVE_VISIBILITY
-#define EGS_PYRAMID_EXPORT __attribute__ ((visibility ("default")))
-#define EGS_PYRAMID_LOCAL  __attribute__ ((visibility ("hidden")))
-#else
-#define EGS_PYRAMID_EXPORT
-#define EGS_PYRAMID_LOCAL
-#endif
+    #ifdef HAVE_VISIBILITY
+        #define EGS_PYRAMID_EXPORT __attribute__ ((visibility ("default")))
+        #define EGS_PYRAMID_LOCAL  __attribute__ ((visibility ("hidden")))
+    #else
+        #define EGS_PYRAMID_EXPORT
+        #define EGS_PYRAMID_LOCAL
+    #endif
 
 #endif
 
@@ -102,6 +103,27 @@ pyramid base is defined.
 The \c pyramid.geom example geometry file demonstrate the use
 of a pyramid object.
 
+A simple example:
+\verbatim
+:start geometry definition:
+    :start geometry:
+        name        = my_pyramid
+        library     = egs_pyramid
+        type        = EGS_PyramidZ
+        points      = 1 1  -1 1  -1 -1  4 -1
+        tip         = 0 0 2
+        closed      = 1
+        :start media input:
+            media = water
+        :stop media input:
+    :stop geometry:
+
+    simulation geometry = my_pyramid
+
+:stop geometry definition:
+\endverbatim
+\image html egs_pyramid.png "A simple example"
+
 */
 template <class T>
 class EGS_PYRAMID_EXPORT EGS_PyramidT : public EGS_BaseGeometry {
@@ -130,87 +152,123 @@ public:
 
     ~EGS_PyramidT() {
         delete p;
-        for(int j=0; j<n; j++) delete s[j]; delete [] s;
+        for (int j=0; j<n; j++) {
+            delete s[j];
+        }
+        delete [] s;
     };
 
     bool isInside(const EGS_Vector &x) {
-        EGS_Vector xp(x-xo); EGS_Float axp = a*xp;
-        if( axp > 0 ) return false;
+        EGS_Vector xp(x-xo);
+        EGS_Float axp = a*xp;
+        if (axp > 0) {
+            return false;
+        }
         //if( axp > -1e-10 ) return true;
-        if( !open  && d + axp < 0 ) return false;
+        if (!open  && d + axp < 0) {
+            return false;
+        }
         EGS_Float t = -d/axp;
         //return p->isInside2D(xop+p->getProjection(xp)*t);
         return p->isInside2D(p->getProjection(xo + t*xp));
     };
 
     int isWhere(const EGS_Vector &x) {
-        if( isInside(x) ) return 0; else return -1;
-    };
-    int inside(const EGS_Vector &x) { return isWhere(x); };
-
-    int howfar(int ireg, const EGS_Vector &x, const EGS_Vector &u,
-            EGS_Float &t, int *newmed = 0, EGS_Vector *normal = 0) {
-        int jhit=-1;
-        if( ireg == 0 ) {
-            int convex = p->isConvex();
-            for(int j=0; j<n; j++) {
-                if( convex || s[j]->isInside2D(x) ) {
-                  if(s[j]->isInside(x))
-                    if( s[j]->howfar(true,x,u,t) ) jhit = j;
-                }
-            }
-            if( !open ) {
-                if( p->howfar(true,x,u,t) ) jhit = n;
-            }
-            if( jhit < 0 ) return ireg;
-            if( newmed ) *newmed = -1;
-            if( normal ) *normal = jhit < n ? s[jhit]->getNormal() :
-                p->getNormal();
+        if (isInside(x)) {
+            return 0;
+        }
+        else {
             return -1;
         }
-        for(int j=0; j<n; j++) {
+    };
+    int inside(const EGS_Vector &x) {
+        return isWhere(x);
+    };
+
+    int howfar(int ireg, const EGS_Vector &x, const EGS_Vector &u,
+               EGS_Float &t, int *newmed = 0, EGS_Vector *normal = 0) {
+        int jhit=-1;
+        if (ireg == 0) {
+            int convex = p->isConvex();
+            for (int j=0; j<n; j++) {
+                if (convex || s[j]->isInside2D(x)) {
+                    if (s[j]->isInside(x))
+                        if (s[j]->howfar(true,x,u,t)) {
+                            jhit = j;
+                        }
+                }
+            }
+            if (!open) {
+                if (p->howfar(true,x,u,t)) {
+                    jhit = n;
+                }
+            }
+            if (jhit < 0) {
+                return ireg;
+            }
+            if (newmed) {
+                *newmed = -1;
+            }
+            if (normal) *normal = jhit < n ? s[jhit]->getNormal() :
+                                      p->getNormal();
+            return -1;
+        }
+        for (int j=0; j<n; j++) {
             //bool in = s[j]->isInside(x) && s[j]->isInside2D(x);
             EGS_Float up = u*s[j]->getNormal(), xp = s[j]->distance(x);
-            if( up > 0 && xp < 0 ) {
+            if (up > 0 && xp < 0) {
                 EGS_Float tt = -xp/up;
-                if( tt <= t && s[j]->isInside2D(x+u*tt) ) {
-                    t = tt; jhit = j;
+                if (tt <= t+boundaryTolerance && s[j]->isInside2D(x+u*tt)) {
+                    t = tt;
+                    jhit = j;
                 }
             }
         }
-        if( !open ) {
+        if (!open) {
             EGS_Float up = u*p->getNormal(), xp = p->distance(x);
-            if( up > 0 && xp < 0 ) {
+            if (up > 0 && xp < 0) {
                 EGS_Float tt = -xp/up;
-                if( tt <= t && p->isInside2D(x+u*tt) ) {
-                    t = tt; jhit = n;
+                if (tt <= t+boundaryTolerance && p->isInside2D(x+u*tt)) {
+                    t = tt;
+                    jhit = n;
                 }
             }
         }
-        if( jhit < 0 ) return ireg;
-        if( newmed ) *newmed = med;
-        if( normal ) *normal = jhit < n ? s[jhit]->getNormal()*(-1) :
-                                          p->getNormal()*(-1);
+        if (jhit < 0) {
+            return ireg;
+        }
+        if (newmed) {
+            *newmed = med;
+        }
+        if (normal) *normal = jhit < n ? s[jhit]->getNormal()*(-1) :
+                                  p->getNormal()*(-1);
         return 0;
     };
 
     // TODO: optimize. this implementation is waaaay too slow.
     EGS_Float hownear(int ireg, const EGS_Vector &x) {
-        EGS_Float tperp = 1e30;
-        for(int j=0; j<n; j++) {
+        EGS_Float tperp = veryFar;
+        for (int j=0; j<n; j++) {
             EGS_Float t = s[j]->hownear(true,x);
-            if( t < tperp ) {
-                if( t <= 0 ) return 0; tperp = t;
+            if (t < tperp) {
+                if (t <= 0) {
+                    return 0;
+                }
+                tperp = t;
             }
         }
-        if( !open ) {
+        if (!open) {
             EGS_Float t = p->hownear(true,x);
-            if( t < tperp ) tperp = t;
+            if (t < tperp) {
+                tperp = t;
+            }
         }
         return tperp;
     };
 
-    const string &getType() const { return p->getType(); };
+    const string &getType() const {
+        return p->getType();
+    };
 
     void printInfo() const;
 

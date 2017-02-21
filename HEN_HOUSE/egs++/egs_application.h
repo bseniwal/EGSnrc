@@ -26,13 +26,14 @@
 #  Contributors:    Frederic Tessier
 #                   Ernesto Mainegra-Hing
 #                   Blake Walters
+#                   Reid Townson
 #
 ###############################################################################
 */
 
 
 /*! \file egs_application.h
- *  \brief EGS_Application header file
+ *  \brief EGS_Application class header file
  *  \IK
  */
 
@@ -382,8 +383,11 @@ public:
      to report intermediate results during a simulation.
     */
     virtual void getCurrentResult(double &sum, double &sum2, double &norm,
-            double &count) {
-        sum = 0; sum2 = 0; norm = 1; count = 0;
+                                  double &count) {
+        sum = 0;
+        sum2 = 0;
+        norm = 1;
+        count = 0;
     };
 
     /*! \brief Analyze the simulation results.
@@ -451,19 +455,29 @@ public:
     /*! \brief Returns a pointer to the EGS_Input object containing the
       user input to the application found in the input file.
     */
-    EGS_Input *getInput() { return input; };
+    EGS_Input *getInput() {
+        return input;
+    };
 
     /*! \brief Returns the application name */
-    const string &getAppName() const { return app_name; };
+    const string &getAppName() const {
+        return app_name;
+    };
 
     /*! \brief Returns the \c EGS_HOME directory */
-    const string &getEgsHome() const { return egs_home; };
+    const string &getEgsHome() const {
+        return egs_home;
+    };
 
     /*! \brief Returns the \c HEN_HOUSE directory */
-    const string &getHenHouse() const { return hen_house; };
+    const string &getHenHouse() const {
+        return hen_house;
+    };
 
     /*! \brief Returns the base name of the output file(s) */
-    const string &getOutputFile() const { return output_file; };
+    const string &getOutputFile() const {
+        return output_file;
+    };
 
     /*! \brief Returns the base name of the final output file(s)
 
@@ -473,7 +487,9 @@ public:
     getOutputFile() returns xxx_wX with xxx indicating the output file name
     and X the job number.
     */
-    const string &getFinalOutputFile() const { return final_output_file; };
+    const string &getFinalOutputFile() const {
+        return final_output_file;
+    };
 
     /*! \brief Constructs and returns the name of an input/output file
 
@@ -485,13 +501,19 @@ public:
     string constructIOFileName(const char *extension, bool with_run_dir) const;
 
     /*! \brief Returns the absolute path to the user code directory */
-    const string &getAppDir() const { return app_dir; };
+    const string &getAppDir() const {
+        return app_dir;
+    };
 
     /*! \brief Returns the name of the working directory */
-    const string &getRunDir() const { return run_dir; };
+    const string &getRunDir() const {
+        return run_dir;
+    };
 
     /*! \brief Returns the name of the working directory */
-    const string &getWorkDir() const { return run_dir; };
+    const string &getWorkDir() const {
+        return run_dir;
+    };
 
     /*! \brief Possible calls to the user scoring function ausgab(). */
     enum AusgabCall {
@@ -520,7 +542,7 @@ public:
         AfterPhoto = 20,         //!< after a photo-absorption event
         EnteringUphi = 21,       //!< the rotation routine was just entered
         LeavingUphi = 22,        //!< about to leave the rotation routine
-                                 //!< I consider the above 2 to be obsolete
+        //!< I consider the above 2 to be obsolete
         BeforeRayleigh = 23,     //!< before coherent scattering
         AfterRayleigh = 24,      //!< after coherent scattering
         FluorescentEvent = 25,   //!< a fluorescent transition just occured
@@ -547,7 +569,9 @@ public:
      there was no job number specified (see getIparallel()) or
      the job number was greater than the number of parallel jobs.
     */
-    int getNparallel() const { return n_parallel; };
+    int getNparallel() const {
+        return n_parallel;
+    };
 
     /*! \brief Returns the job number in a parallel run.
 
@@ -555,20 +579,34 @@ public:
      <code>-j n</code> or <code>--job n</code> and requires that the number of parallel
      jobs was also specified using <code>-P n</code>.
     */
-    int getIparallel() const { return i_parallel; };
+    int getIparallel() const {
+        return i_parallel;
+    };
+
+    /*! \brief Returns the first job number in a parallel run.
+
+     The first job number is specified on the command line using
+     <code>-f n</code> or <code>--first-job n</code> and requires that the number of parallel
+     jobs was also specified using <code>-P n</code>.
+    */
+    int getFirstParallel() const {
+        return first_parallel;
+    };
 
     /*! \brief Calculates distance to a boundary along the current direction.
 
      This function implements the EGSnrc howfar geometry specification
     */
     inline int howfar(int ireg, const EGS_Vector &x, const EGS_Vector &u,
-               EGS_Float &t, int *newmed) {
+                      EGS_Float &t, int *newmed) {
 
         geometry->resetErrorFlag();
         EGS_Float twant = t;
         int inew = geometry->howfar(ireg,x,u,t,newmed);
         storeGeometryStep(ireg,inew,x,u,twant,t);
-        if( geometry->getLastError() ) reportGeometryError();
+        if (geometry->getLastError()) {
+            reportGeometryError();
+        }
         return inew;
 
         //return geometry->howfar(ireg,x,u,t,newmed);
@@ -583,7 +621,9 @@ public:
     };
 
     /*! \brief Returns the medium index in region ireg using C-style indexing.*/
-    inline int getMedium(int ireg) { return geometry->medium(ireg); };
+    inline int getMedium(int ireg) {
+        return geometry->medium(ireg);
+    };
 
     /*! \brief Returns true if \a ireg is a real region, false otherwise
 
@@ -592,8 +632,43 @@ public:
       regions than actual regions. This method can be used in such cases
       to check if a region exists.
      */
-    bool isRealRegion(int ireg) { return geometry->isRealRegion(ireg); }
-    int  isWhere(EGS_Vector &r) { return geometry->isWhere(r); }
+    bool isRealRegion(int ireg) {
+        return geometry->isRealRegion(ireg);
+    }
+    int  isWhere(EGS_Vector &r) {
+        return geometry->isWhere(r);
+    }
+
+    /*! \brief Gets numbers out of \a str and pushes them onto \a regs
+
+      Finds integer numbers in \a str and pushes them onto the vector \a regs.
+      For an input string containing a mixture of labels and region numbers,
+      this extracts the region numbers.
+
+      Usually you will do something like:
+      \verbatim
+      string regionString;
+      vector<int> regionVector;
+      int err1 = input->getInput("cavity regions",regionString);
+      geom->getNumberRegions(regionString, regionVector);
+      geom->getLabelRegions(regionString, regionVector);
+      \endverbatim
+     */
+    void getNumberRegions(const string &str, vector<int> &regs) {
+        geometry->getNumberRegions(str, regs);
+    }
+
+    /*! \brief Gets the regions for the labels in \a str and pushes onto \a regs
+
+      This function is used after \a getNumberRegions. It looks for labels
+      in \a str, finds the corresponding local region numbers, and pushes those
+      region numbers onto the region number vector \a regs.
+
+      The \a regs vector is sorted by this function, and duplicates are removed!
+     */
+    void getLabelRegions(const string &str, vector<int> &regs) {
+        geometry->getLabelRegions(str, regs);
+    }
 
     /*! \brief User scoring function for accumulation of results and VRT implementation
 
@@ -608,7 +683,9 @@ public:
      This function should be re-implemented in derived classes
      to perform the actual scoring of the quantities of interest.
     */
-    virtual int ausgab(int) { return 0; };
+    virtual int ausgab(int) {
+        return 0;
+    };
 
     /*! \brief Start the transport of a new particle.
 
@@ -699,7 +776,8 @@ public:
      steps are counted in the mortran back-end.
      */
     virtual void getElectronSteps(double &ch_steps, double &all_steps) const {
-        ch_steps = 0; all_steps = 0;
+        ch_steps = 0;
+        all_steps = 0;
     };
 
     /*! \brief Add data from a parallel job.
@@ -750,7 +828,7 @@ public:
 
     /*! \brief Check if a device holding a given stream is full
      */
-    void checkDeviceFull (FILE *);
+    void checkDeviceFull(FILE *);
 
     /*! \brief Finds a command line argument.
 
@@ -762,7 +840,7 @@ public:
       \sa checkEnvironmentVar()
     */
     static bool getArgument(int &argc, char **argv,
-            const char *name1, const char *name2, string &arg);
+                            const char *name1, const char *name2, string &arg);
 
     /*! \brief Finds a command line argument.
 
@@ -771,7 +849,7 @@ public:
       variable \a env (if it is defined).
     */
     static void checkEnvironmentVar(int &argc, char **argv, const char *env,
-            const char *n1, const char *n2, string &var);
+                                    const char *n1, const char *n2, string &var);
 
 protected:
 
@@ -819,7 +897,9 @@ protected:
      This function is called from within the default implementation of
      the initSimulation() function.
     */
-    virtual int initCrossSections() { return 0; };
+    virtual int initCrossSections() {
+        return 0;
+    };
 
     /*! \brief Initialize the scoring of quantities of interest.
 
@@ -828,7 +908,9 @@ protected:
      the user to do all initializations related to the scoring of
      quantities of interest.
     */
-    virtual int initScoring() { return 0; };
+    virtual int initScoring() {
+        return 0;
+    };
 
     /*! \brief Construct the run control object.
 
@@ -874,7 +956,9 @@ protected:
       This function is called from within the default implementation of
       the initSimulation() function.
     */
-    virtual int initEGSnrcBackEnd() { return 0; };
+    virtual int initEGSnrcBackEnd() {
+        return 0;
+    };
 
     /*! \brief Initialize ausgab objects.
 
@@ -905,7 +989,9 @@ protected:
      the simulateSingleShower() function and its return value is returned
      as the return value of simulateSingleShower()
     */
-    virtual int finishShower() { return 0; };
+    virtual int finishShower() {
+        return 0;
+    };
 
     /*! \brief Simulate a single shower.
 
@@ -916,12 +1002,14 @@ protected:
      This function is reimplemented in EGS_AdvancedApplication
      to call the mortran EGSnrc shower subroutine.
     */
-    virtual int shower() { return 0; };
+    virtual int shower() {
+        return 0;
+    };
 
     virtual void finishRun() { };
 
     void storeGeometryStep(int ireg, int inew, const EGS_Vector &x,
-            const EGS_Vector &u, EGS_Float twant, EGS_Float t);
+                           const EGS_Vector &u, EGS_Float twant, EGS_Float t);
 
     void reportGeometryError();
 
@@ -946,7 +1034,8 @@ protected:
     string  abs_pegs_file;      //!< The pegs file name including absolute path
 
     int     n_parallel,  //!< Number of parallel jobs
-            i_parallel;  //!< Job index in parallel runs
+            i_parallel,  //!< Job index in parallel runs
+            first_parallel; //!< first parallel job number
     bool    batch_run;   //!< Interactive or batch run.
     bool    simple_run;  //!< Use a simple run control even for parallel runs
     bool    is_pegsless; //!< set to true if a pegsless run
@@ -994,12 +1083,27 @@ public:
     //************************************************************
     // Utility functions for use with ausgab dose scoring objects
     //************************************************************
-    EGS_Float getFluence(){ return source->getFluence();};
-    int       getnRegions(){return geometry->regions();};
-    int       getnMedia(){return geometry->nMedia();};
-    const char* getMediumName(int ind){return geometry->getMediumName(ind);};
-    virtual EGS_Float getMediumRho(int ind){return -1.0;};
-    virtual EGS_Float getEdep(){return 0.0;};
+    EGS_Float getFluence() {
+        return source->getFluence();
+    };
+    int       getnRegions() {
+        return geometry->regions();
+    };
+    int       getnMedia() {
+        return geometry->nMedia();
+    };
+    const char *getMediumName(int ind) {
+        return geometry->getMediumName(ind);
+    };
+    virtual EGS_Float getMediumRho(int ind) {
+        return -1.0;
+    };
+    virtual EGS_Float getEdep() {
+        return 0.0;
+    };
+    virtual EGS_Float getRM() {
+        return -1.0;
+    };
 };
 
 #define APP_MAIN(app_name) \

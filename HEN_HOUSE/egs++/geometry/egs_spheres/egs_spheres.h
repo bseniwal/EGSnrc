@@ -23,7 +23,7 @@
 #
 #  Author:          Iwan Kawrakow, 2005
 #
-#  Contributors:
+#  Contributors:    Reid Townson
 #
 ###############################################################################
 */
@@ -41,22 +41,22 @@
 
 #ifdef WIN32
 
-#ifdef BUILD_SPHERES_DLL
-#define EGS_SPHERES_EXPORT __declspec(dllexport)
-#else
-#define EGS_SPHERES_EXPORT __declspec(dllimport)
-#endif
-#define EGS_SPHERES_LOCAL
+    #ifdef BUILD_SPHERES_DLL
+        #define EGS_SPHERES_EXPORT __declspec(dllexport)
+    #else
+        #define EGS_SPHERES_EXPORT __declspec(dllimport)
+    #endif
+    #define EGS_SPHERES_LOCAL
 
 #else
 
-#ifdef HAVE_VISIBILITY
-#define EGS_SPHERES_EXPORT __attribute__ ((visibility ("default")))
-#define EGS_SPHERES_LOCAL  __attribute__ ((visibility ("hidden")))
-#else
-#define EGS_SPHERES_EXPORT
-#define EGS_SPHERES_LOCAL
-#endif
+    #ifdef HAVE_VISIBILITY
+        #define EGS_SPHERES_EXPORT __attribute__ ((visibility ("default")))
+        #define EGS_SPHERES_LOCAL  __attribute__ ((visibility ("hidden")))
+    #else
+        #define EGS_SPHERES_EXPORT
+        #define EGS_SPHERES_LOCAL
+    #endif
 
 #endif
 
@@ -85,6 +85,26 @@ Examples of the usage of sets of spheres can be found in the
 \c cones.geom, \c hemisphere.geom, \c mushroom.geom, \c rounded_ionchamber.geom
 and \c I6702.inp example geometry files.
 
+A simple example:
+\verbatim
+:start geometry definition:
+    :start geometry:
+        name        = my_spheres
+        library     = egs_spheres
+        midpoint = 0 0 0
+        radii = 1 2 3
+        :start media input:
+            media = water air water
+            set medium = 1 1
+            set medium = 2 2
+        :stop media input:
+    :stop geometry:
+
+    simulation geometry = my_spheres
+
+:stop geometry definition:
+\endverbatim
+\image html egs_spheres.png "A simple example with clipping plane 1,0,0,0"
 */
 class EGS_SPHERES_EXPORT EGS_cSpheres : public EGS_BaseGeometry {
 
@@ -92,12 +112,13 @@ public:
 
     // construct some CONCENTRIC spheres
     EGS_cSpheres(int ns, const EGS_Float *radius, const EGS_Vector &position,
-                  const string &Name = "");
+                 const string &Name = "");
 
     // destruct spheres from memory
     ~EGS_cSpheres() {
-        if(nreg) {
-            delete [] R2; delete [] R;
+        if (nreg) {
+            delete [] R2;
+            delete [] R;
         }
     }
 
@@ -108,17 +129,21 @@ public:
     int isWhere(const EGS_Vector &x);
 
     EGS_Float howfarToOutside(int ireg, const EGS_Vector &x,
-                    const EGS_Vector &u);
+                              const EGS_Vector &u);
     // howfar is particle trajectory from sphere boundry
     int howfar(int ireg, const EGS_Vector &x, const EGS_Vector &u,
-            EGS_Float &t, int *newmed=0, EGS_Vector *normal=0);
+               EGS_Float &t, int *newmed=0, EGS_Vector *normal=0);
 
     // hownear - closest perpendicular distance to sphere surface
     EGS_Float hownear(int ireg, const EGS_Vector &x);
 
-    int getMaxStep() const { return 2*nreg; };
+    int getMaxStep() const {
+        return 2*nreg;
+    };
 
-    const string &getType() const { return type; };
+    const string &getType() const {
+        return type;
+    };
 
     void printInfo() const;
 

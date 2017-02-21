@@ -1,7 +1,7 @@
 
 ###############################################################################
 #
-#  EGSnrc additional Bourne shell definitions for BEAMnrc
+#  EGSnrc egs++ sample geometry
 #  Copyright (C) 2015 National Research Council Canada
 #
 #  This file is part of EGSnrc.
@@ -21,33 +21,33 @@
 #
 ###############################################################################
 #
-#  Author:          Iwan Kawrakow, 2004
+#  Author:          Reid Townson, 2016
 #
-#  Contributors:    Blake Walters
+#  Contributors:
 #
 ###############################################################################
 #
-#  Source this file from your .bashrc file if a Bourne shell flavor is your
-#  default shell. It must be sourced AFTER egsnrc_bashrc_additions. You may
-#  put additional definitions and aliases into this file but be aware that
-#  changes will be lost if you rerun the installation. It is therefore better
-#  to put additional system wide definitions in:
+#  An example geometry of egs_elliptic_cylinders.
 #
-#  $HEN_HOUSE/scripts/local_bashrc_additions
 #
 ###############################################################################
 
 
-#  Environment variables
-#
-OMEGA_HOME=${HEN_HOUSE}omega
-export OMEGA_HOME
+:start geometry definition:
+    :start geometry:
+        name        = my_cylinders
+        library     = egs_elliptic_cylinders
+        type        = EGS_EllipticCylindersXZ
+        midpoint    = 0
+        x-radii     = 1 2 3
+        y-radii     = 1 4 7
+        :start media input:
+            media = water air water
+            set medium = 1 1
+            set medium = 2 2
+        :stop media input:
+    :stop geometry:
 
-#  Aliases
-#
-alias beamnrc_gui='$OMEGA_HOME/progs/gui/beamnrc/beamnrc_gui.tcl'
-alias beam_gui='$OMEGA_HOME/progs/gui/beamnrc/beamnrc_gui.tcl'
-alias dosxyznrc_gui='$OMEGA_HOME/progs/gui/dosxyznrc/dosxyznrc_gui.tcl'
-alias dosxyz_gui='$OMEGA_HOME/progs/gui/dosxyznrc/dosxyznrc_gui.tcl'
-alias beamdp_gui='$OMEGA_HOME/progs/gui/beamdp/beamdp_gui.tcl'
-alias pprocess='$HEN_HOUSE/scripts/pprocess'
+    simulation geometry = my_cylinders
+
+:stop geometry definition:

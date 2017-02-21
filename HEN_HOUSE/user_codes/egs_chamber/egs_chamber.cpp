@@ -1,64 +1,65 @@
-/*****************************************************************************
- *  "based on"
- *  $Id: egs_chamber.cpp,v 1.21 2012/09/07 19:23:33 ftessier Exp $
- *
- *  cavity is an advanced EGSnrc application using the C++ interface.
- *  It implements most of the functionality of the cavrznrc user code
- *  written in mortran except that now, due to the use of the general
- *  geometry and source packages included in egspp, any geometry or
- *  any source can be used in the simulation.
- *
- *  -------------------------------------------------------------
- *  modifications made for eff-improvements for in-phantom calcs
- *  SEPT-NOV 2007
- *  - photon cross section enhancement in defined regions
- *  - temp. phase-space scoring / correlated sampling
- *  (you will need the modified versions of egs_rndm)
- *	!!! COMPILE egspp IN DOUBLE PRECISION !!!
- *
- *  Joerg Wulff
- *  IMPS - Institut fuer Medizinische Physik
- *   und Strahlenschutz
- *  Wiesenstr. 16
- *  35390 Giessen
- *  GERMANY
- *  email: joerg.wulff@tg.fh-giessen.de
- *  ---------------------------------------------------------------
- *
- *  Modifications by Hugo Bouchard, CHUM: added the possibility to calculate
- *  positioning-induced dose uncertainty. Also re-factored the code to have
- *  most function implementations outside of the class declaration. Nov 2009
- *
- *  email: hugo.bouchard.chum@ssss.gouv.qc.ca
- *  ---------------------------------------------------------------
- *
- *  Modifications by Martin Martinov, Carleton: added the possibility to
- *  output dose of every single scoring region, rather than a total sum.
- *  Usage,
- *
- *  :start scoring options:
- *      multiregion scoring = 1
- *  
- *      :start calculation geometry:
- *          geometry name  = Phantom
- *          cavity regions = 1 2 3 4 5
- *          cavity mass    = 1 1 1 1 1
- *      :stop calculation geometry:
- *  :stop scoring options:
- *
- *  Note: This option will throw an egsFatal() if the number of regions and
- *  masses are not the same
- *
- *  email: martinov@physics.carleton.ca
- *
- *
- *****************************************************************************/
-
- 
+/*
+###############################################################################
+#
+#  EGSnrc egs++ egs_chamber application
+#  Copyright (C) 2015 National Research Council Canada
+#
+#  This file is part of EGSnrc.
+#
+#  EGSnrc is free software: you can redistribute it and/or modify it under
+#  the terms of the GNU Affero General Public License as published by the
+#  Free Software Foundation, either version 3 of the License, or (at your
+#  option) any later version.
+#
+#  EGSnrc is distributed in the hope that it will be useful, but WITHOUT ANY
+#  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+#  FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public License for
+#  more details.
+#
+#  You should have received a copy of the GNU Affero General Public License
+#  along with EGSnrc. If not, see <http://www.gnu.org/licenses/>.
+#
+###############################################################################
+#
+#  Author:          Joerg Wulff, 2007
+#
+#  Contributors:    Iwan Kawrakow
+#                   Ernesto Mainegra-Hing
+#                   Hugo Bouchard
+#                   Frederic Tessier
+#                   Reid Townson
+#
+###############################################################################
+#
+#  This code was originally adapter from the egs++ application cavity by
+#  Joerg Wulff in 2007.
+#
+###############################################################################
+#
+#  Efficient in-phantom ion chamber calculations.
+#
+#  Hugo Bouchard, 2009: Added the possibility to calculate positioning-induced
+#  dose uncertainty. Also re-factored the code to have most function
+#  implementations outside of the class declaration.
+#
+#  Iwan Kawrakow, 2007: Committing Joerg Wulff's modifications to cavity as a
+#  separate user code. Joerg threw out everything related to FAC and HVL and
+#  the code is now usable for ion chamber correction factors only. So, I
+#  decided to rename it to egs_chamber and have it as a separate user code.
+#  He had a hack to store the state of the random number generator (with
+#  modifications of the EGS_RandomGenerator class). For now I commented this
+#  out but clearly it will be useful to add the functionality of random number
+#  generators storing and restoring their state.
+#
+#  Joerg Wulff, 2007: modifications made for eff-improvements for in-phantom
+#  calculations: a) photon cross section enhancement in defined regions;
+#  b) temporary phase-space scoring and correlated sampling.
+#
+###############################################################################
+*/
 // Needed for Martin rndm output/input debug
 #include <fstream>
- 
- 
+
 #include <cstdlib>
 // We derive from EGS_AdvancedApplication => need the header file.
 #include "egs_advanced_application.h"
@@ -1228,12 +1229,15 @@ int EGS_ChamberApplication::initScoring() {
         while( (aux = options->takeInputItem("calculation geometry")) ) {
             string gname;
             int err = aux->getInput("geometry name",gname);
-            vector<int> cav;
-            int err1 = aux->getInput("cavity regions",cav);
 
+            string cavString;
+            vector<int> cav;
+            int err1 = aux->getInput("cavity regions",cavString);
+
+            string ecut_rString;
             vector<int> ecut_r;
             EGS_Float ecut_v;
-            int err5 = aux->getInput("ECUT regions",ecut_r);	// jwu
+            int err5 = aux->getInput("ECUT regions",ecut_rString);	// jwu
             int err6 = aux->getInput("ECUT",ecut_v);
 
             string cav_gname;
@@ -1244,29 +1248,14 @@ int EGS_ChamberApplication::initScoring() {
                 do_mcav = false;
             }
             int err11, err12;
+            string cs_regString;
             vector<int> cs_reg;
             vector<int> cs_fac;
             if( do_cse ) {
-                err11 = aux->getInput("enhance regions",cs_reg);
+                err11 = aux->getInput("enhance regions",cs_regString);
                 err12 = aux->getInput("enhancement",cs_fac);
             }
             else{ err11 = 1; err12 = 1; }
-
-            if (do_cse && cs_reg[0]<0 && cs_reg[1]<0 && cs_reg.size()==2) {
-                int start = -cs_reg[0];
-                int end   = -cs_reg[1];
-                cs_reg.clear();
-                for (int i=start; i<=end; i++) {
-                    cs_reg.push_back(i);
-                }
-            }
-            if (do_cse && cs_fac[0]<0 && cs_fac.size()==1) {
-                int tmp = -cs_fac[0];
-                cs_fac.clear();
-                for (int i=0; i<cs_reg.size(); i++) {
-                    cs_fac.push_back(tmp);
-                }
-            }
 
             EGS_Float cmass;
 			
@@ -1330,10 +1319,7 @@ int EGS_ChamberApplication::initScoring() {
             if( err12 ) egsWarning("initScoring: missing/wrong 'enhancement' "
                     "input\n");
             int err13 = 0;
-            if( !err11 && !err12 && (cs_reg.size() != cs_fac.size() )){
-                egsWarning("initScoring: number of 'enhance regions' must match 'enhancement'\n");
-                err13 = 1;
-            }
+
             if( err || err1 ) egsWarning("  --> input ignored\n");
             else {
                 EGS_BaseGeometry::setActiveGeometryList(app_index);
@@ -1346,10 +1332,40 @@ int EGS_ChamberApplication::initScoring() {
                 }
 
                 EGS_BaseGeometry *g = EGS_BaseGeometry::getGeometry(gname);
-                if( !g ) egsWarning("initScoring: no geometry named %s -->"
+                if( !g ) {
+                    egsWarning("initScoring: no geometry named %s -->"
                         " input ignored\n",gname.c_str());
+                } else {
+                    g->getNumberRegions(cavString, cav);
+                    g->getLabelRegions(cavString, cav);
+                    g->getNumberRegions(cs_regString, cs_reg);
+                    g->getLabelRegions(cs_regString, cs_reg);
+                    g->getNumberRegions(ecut_rString, ecut_r);
+                    g->getLabelRegions(ecut_rString, ecut_r);
+                }
 
-                else {
+                if (do_cse && cs_reg[0]<0 && cs_reg[1]<0 && cs_reg.size()==2) {
+                    int start = -cs_reg[0];
+                    int end   = -cs_reg[1];
+                    cs_reg.clear();
+                    for (int i=start; i<=end; i++) {
+                        cs_reg.push_back(i);
+                    }
+                }
+                if (do_cse && cs_fac[0]<0 && cs_fac.size()==1) {
+                    int tmp = -cs_fac[0];
+                    cs_fac.clear();
+                    for (int i=0; i<cs_reg.size(); i++) {
+                        cs_fac.push_back(tmp);
+                    }
+                }
+                if( !err11 && !err12 && (cs_reg.size() != cs_fac.size() )){
+                    egsWarning("initScoring: number of 'enhance regions' must match 'enhancement'\n");
+                    err13 = 1;
+                }
+
+                if( g ) {
+
                     int nreg = g->regions();
                     int *regs = new int [cav.size()];
                     int ncav = 0;
@@ -1439,8 +1455,11 @@ int EGS_ChamberApplication::initScoring() {
                     if ( do_TmpPhsp ){
                         vector<string> subgeom_name;
                         int err777 = aux->getInput("sub geometries",subgeom_name);
+                        string subgeom_regsString;
                         vector<int> subgeom_regs;
-                        int err888 = aux->getInput("subgeom regions",subgeom_regs);
+                        int err888 = aux->getInput("subgeom regions",subgeom_regsString);
+                        cg->getNumberRegions(subgeom_regsString, subgeom_regs);
+                        cg->getLabelRegions(subgeom_regsString, subgeom_regs);
                         if( err777 ){
                             egsWarning("initScoring: missing/wrong 'sub geometries' "
                                     " for geometry '%s'\n", gname.c_str());

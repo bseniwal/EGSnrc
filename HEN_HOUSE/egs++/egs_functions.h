@@ -39,9 +39,37 @@
 using namespace std;
 
 /*! \file egs_functions.h
- *  \brief Global egspp functions.
+ *  \brief Global egspp functions header file
  *  \IK
  */
+
+/*! \brief The epsilon constant for floating point comparisons
+ *
+ * \ingroup egspp_main
+ *
+ * The epsilon constant is a small number that can be used
+ * when comparing two floating point numbers that may be close
+ * in value.
+ */
+const EGS_Float epsilon = 1e-10;
+
+/*! \brief The maximum number of iterations for near-infinite loops
+ *
+ * \ingroup egspp_main
+ *
+ * The loopMax constant can be used to replace while(1){} loops
+ * so that the code returns after some large number of iterations.
+ */
+const EGS_I64 loopMax = 1e10;
+
+/*! \brief A very large float
+ *
+ * \ingroup egspp_main
+ *
+ * The veryFar constant is simply a very large float used as a large ditance
+ * It is often used as an initial large value for geometry bounds.
+ */
+const EGS_Float veryFar = 1e30;
 
 /*! \brief Writes the 64 bit integer \a n to the output stream data
  * and returns \c true on success, \c false on failure.
@@ -120,7 +148,7 @@ enum EGS_InfoType { Information, Warning, Fatal };
  * used function for messages of that type.
  */
 extern EGS_InfoFunction EGS_EXPORT
-         egsSetInfoFunction(EGS_InfoType t, EGS_InfoFunction func);
+egsSetInfoFunction(EGS_InfoType t, EGS_InfoFunction func);
 
 /*! \brief Reset I/O functions to their defaults
  *

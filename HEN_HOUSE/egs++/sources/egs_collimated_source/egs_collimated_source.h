@@ -24,6 +24,7 @@
 #  Author:          Iwan Kawrakow, 2005
 #
 #  Contributors:    Ernesto Mainegra-Hing
+#                   Reid Townson
 #
 ###############################################################################
 */
@@ -46,22 +47,22 @@
 
 #ifdef WIN32
 
-#ifdef BUILD_COLLIMATED_SOURCE_DLL
-#define EGS_COLLIMATED_SOURCE_EXPORT __declspec(dllexport)
-#else
-#define EGS_COLLIMATED_SOURCE_EXPORT __declspec(dllimport)
-#endif
-#define EGS_COLLIMATED_SOURCE_LOCAL
+    #ifdef BUILD_COLLIMATED_SOURCE_DLL
+        #define EGS_COLLIMATED_SOURCE_EXPORT __declspec(dllexport)
+    #else
+        #define EGS_COLLIMATED_SOURCE_EXPORT __declspec(dllimport)
+    #endif
+    #define EGS_COLLIMATED_SOURCE_LOCAL
 
 #else
 
-#ifdef HAVE_VISIBILITY
-#define EGS_COLLIMATED_SOURCE_EXPORT __attribute__ ((visibility ("default")))
-#define EGS_COLLIMATED_SOURCE_LOCAL  __attribute__ ((visibility ("hidden")))
-#else
-#define EGS_COLLIMATED_SOURCE_EXPORT
-#define EGS_COLLIMATED_SOURCE_LOCAL
-#endif
+    #ifdef HAVE_VISIBILITY
+        #define EGS_COLLIMATED_SOURCE_EXPORT __attribute__ ((visibility ("default")))
+        #define EGS_COLLIMATED_SOURCE_LOCAL  __attribute__ ((visibility ("hidden")))
+    #else
+        #define EGS_COLLIMATED_SOURCE_EXPORT
+        #define EGS_COLLIMATED_SOURCE_LOCAL
+    #endif
 
 #endif
 
@@ -97,6 +98,13 @@ as a target shape in a collimated source are
 \link EGS_PolygonShape polygons \endlink and
 \link EGS_TriangleShape triangles \endlink.
 
+The fluence calculated by getFluence() is determined as \f$N/d^2\f$,
+where \c N is the number of source particles and \c d is provided by
+the user as \c distance, the minimum distance between the source and target
+shapes. This accounts for the solid angle within which particles are generated.
+If \c distance is not provided, it defaults to 1, which will likely be
+an incorrect normalization.
+
 A collimated source is defined as follows:
 \verbatim
 :start source:
@@ -111,6 +119,7 @@ A collimated source is defined as follows:
     :start spectrum:
         definition of the spectrum
     :stop spectrum:
+    distance = source-target shape min. distance
     charge = -1 or 0 or 1 for electrons or photons or positrons
 :stop source:
 \endverbatim
@@ -118,9 +127,36 @@ It is worth noting that the functionality of sources 1, 11, 12, 14, 15 and 16
 from the RZ series of user codes and source 3 in DOSXYZnrc can be
 reproduced with the collimated source from the EGSnrc C++ class library.
 
+A simple example:
+\verbatim
+:start source definition:
+    :start source:
+        library = egs_collimated_source
+        name = my_source
+        :start source shape:
+            type = point
+            position = 0 0 5
+        :stop source shape:
+        :start target shape:
+            library   = egs_rectangle
+            rectangle = -1 -1 1 1
+        :stop target shape:
+        distance = 5
+        charge = -1
+        :start spectrum:
+            type = monoenergetic
+            energy = 20
+        :stop spectrum:
+    :stop source:
+
+    simulation source = my_source
+
+:stop source definition:
+\endverbatim
+\image html egs_collimated_source.png "A simple example"
 */
 class EGS_COLLIMATED_SOURCE_EXPORT EGS_CollimatedSource :
-          public EGS_BaseSimpleSource {
+    public EGS_BaseSimpleSource {
 
 public:
 
@@ -130,10 +166,12 @@ public:
     source shape \a sshape and target shape \a tshape.
     */
     EGS_CollimatedSource(int Q, EGS_BaseSpectrum *Spec,
-            EGS_BaseShape *sshape, EGS_BaseShape *tshape,
-            const string &Name="", EGS_ObjectFactory *f=0) :
-            EGS_BaseSimpleSource(Q,Spec,Name,f), source_shape(sshape),
-            target_shape(tshape), dist(1), ctry(0) { setUp(); };
+                         EGS_BaseShape *sshape, EGS_BaseShape *tshape,
+                         const string &Name="", EGS_ObjectFactory *f=0) :
+        EGS_BaseSimpleSource(Q,Spec,Name,f), source_shape(sshape),
+        target_shape(tshape), dist(1), ctry(0) {
+        setUp();
+    };
 
     /*! Constructor
 
@@ -146,27 +184,29 @@ public:
     };
 
     void getPositionDirection(EGS_RandomGenerator *rndm,
-            EGS_Vector &x, EGS_Vector &u, EGS_Float &wt) {
+                              EGS_Vector &x, EGS_Vector &u, EGS_Float &wt) {
         //x = source_shape->getPoint(rndm);
         x = source_shape->getRandomPoint(rndm);
         int ntry = 0;
         do {
             target_shape->getPointSourceDirection(x,rndm,u,wt);
             ntry++;
-            if( ntry > 10000 )
+            if (ntry > 10000)
                 egsFatal("EGS_CollimatedSource::getPositionDirection:\n"
-                 "  my target shape %s, which is of type %s, failed to\n"
-                 "  return a positive weight after 10000 attempts\n",
-                 target_shape->getObjectName().c_str(),
-                 target_shape->getObjectType().c_str());
-        } while ( wt <= 0 );
+                         "  my target shape %s, which is of type %s, failed to\n"
+                         "  return a positive weight after 10000 attempts\n",
+                         target_shape->getObjectName().c_str(),
+                         target_shape->getObjectType().c_str());
+        }
+        while (wt <= 0);
         //egsInformation("got x=(%g,%g,%g) u=(%g,%g,%g) wt = %g ntry = %d\n",
         //        x.x,x.y,x.z,u.x,u.y,u.z,wt,ntry);
         ctry += ntry;
     };
 
     EGS_Float getFluence() const {
-        double res = ctry; return res/(dist*dist);
+        double res = ctry;
+        return res/(dist*dist);
     };
 
     bool storeFluenceState(ostream &data) const {
@@ -178,17 +218,23 @@ public:
     };
 
     bool addFluenceData(istream &data) {
-        EGS_I64 tmp; bool ok = egsGetI64(data,tmp);
-        if( !ok ) return false;
-        ctry += tmp; return true;
+        EGS_I64 tmp;
+        bool ok = egsGetI64(data,tmp);
+        if (!ok) {
+            return false;
+        }
+        ctry += tmp;
+        return true;
     };
 
     bool isValid() const {
         return (s != 0 && source_shape != 0 && target_shape != 0 &&
-                target_shape->supportsDirectionMethod() );
+                target_shape->supportsDirectionMethod());
     };
 
-    void resetFluenceCounter() {ctry = 0; };
+    void resetFluenceCounter() {
+        ctry = 0;
+    };
 
 protected:
 

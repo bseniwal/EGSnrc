@@ -34,7 +34,7 @@
 
 #include "egs_vector.h"
 #include "egs_math.h"
-#include "egs_track_view.h"
+#include "stddef.h"
 
 class EGS_Light;
 class EGS_MaterialColor;
@@ -44,25 +44,36 @@ class EGS_PrivateVisualizer;
 
 // Clipping plane class
 class EGS_ClippingPlane {
+public:
     EGS_Vector a;
     EGS_Float  d;
-public:
+
+    EGS_ClippingPlane() : a(0.,0.,0.), d(0.) {}
     EGS_ClippingPlane(const EGS_Vector &A, EGS_Float D) : a(A), d(D) {
-        EGS_Float norm = 1/a.length(); d *= norm; a *= norm;
+        EGS_Float norm = 1/a.length();
+        d *= norm;
+        a *= norm;
     };
-    bool isInside(const EGS_Vector &x) const { return (x*a >= d); };
+    bool isInside(const EGS_Vector &x) const {
+        return (x*a >= d);
+    };
     bool howfar(const EGS_Vector &x, const EGS_Vector &u, EGS_Float &t) const {
         EGS_Float xp = a*x, up = a*u;
-        if( (xp >= d && up < 0) || (xp < d && up > 0) ) {
+        if ((xp >= d && up < 0) || (xp < d && up > 0)) {
             EGS_Float tt = (d-xp)/up;
-            if( tt <= t ) { t = tt; return true; }
+            if (tt <= t) {
+                t = tt;
+                return true;
+            }
         }
         return false;
     };
     EGS_Float hownear(const EGS_Vector &x) const {
         return fabs(x*a-d);
     };
-    const EGS_Vector &getNormal() const { return a; };
+    const EGS_Vector &getNormal() const {
+        return a;
+    };
 };
 
 
@@ -77,11 +88,11 @@ public:
     void loadTracksData(const char *fname);
 
     void setProjection(const EGS_Vector &camera_pos,
-            const EGS_Vector &camera_look_at, EGS_Float distance,
-            EGS_Float size_x, EGS_Float size_y);
+                       const EGS_Vector &camera_look_at, EGS_Float distance,
+                       EGS_Float size_x, EGS_Float size_y);
     void setProjection(const EGS_Vector &camera_pos,
-            const EGS_Vector &Xo_screen, const EGS_Vector &V1_screen,
-            const EGS_Vector &V2_screen, EGS_Float size_x, EGS_Float size_y);
+                       const EGS_Vector &Xo_screen, const EGS_Vector &V1_screen,
+                       const EGS_Vector &V2_screen, EGS_Float size_x, EGS_Float size_y);
 
     void setGlobalAmbientLight(const EGS_Vector &light);
 
@@ -99,8 +110,8 @@ public:
                           EGS_Float Alpha=1);
 
     //EGS_Vector *renderImage(EGS_BaseGeometry *, int xsize, int ysize);
-    bool renderImage(EGS_BaseGeometry *, int nx, int ny, EGS_Vector *image);
-    bool renderTracks(EGS_BaseGeometry *, int nx, int ny, EGS_Vector *image);
+    bool renderImage(EGS_BaseGeometry *, int nx, int ny, EGS_Vector *image, int *abort_location=NULL);
+    bool renderTracks(EGS_BaseGeometry *, int nx, int ny, EGS_Vector *image, int *abort_location=NULL);
     EGS_Vector getColor(const EGS_Vector &x, EGS_BaseGeometry *g, const EGS_Float axis_distance, const EGS_Float track_alpha, const bool track_clip);
     void getRegions(const EGS_Vector &x, EGS_BaseGeometry *g, int *regions, EGS_Vector *colors, int maxreg);
 

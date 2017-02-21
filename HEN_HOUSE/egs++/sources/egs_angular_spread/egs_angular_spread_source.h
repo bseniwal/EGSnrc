@@ -23,7 +23,7 @@
 #
 #  Author:          Iwan Kawrakow, 2009
 #
-#  Contributors:
+#  Contributors:    Reid Townson
 #
 ###############################################################################
 */
@@ -45,22 +45,22 @@
 
 #ifdef WIN32
 
-#ifdef BUILD_ANGULAR_SPREAD_SOURCE_DLL
-#define EGS_ANGULAR_SPREAD_SOURCE_EXPORT __declspec(dllexport)
-#else
-#define EGS_ANGULAR_SPREAD_SOURCE_EXPORT __declspec(dllimport)
-#endif
-#define EGS_ANGULAR_SPREAD_SOURCE_LOCAL
+    #ifdef BUILD_ANGULAR_SPREAD_SOURCE_DLL
+        #define EGS_ANGULAR_SPREAD_SOURCE_EXPORT __declspec(dllexport)
+    #else
+        #define EGS_ANGULAR_SPREAD_SOURCE_EXPORT __declspec(dllimport)
+    #endif
+    #define EGS_ANGULAR_SPREAD_SOURCE_LOCAL
 
 #else
 
-#ifdef HAVE_VISIBILITY
-#define EGS_ANGULAR_SPREAD_SOURCE_EXPORT __attribute__ ((visibility ("default")))
-#define EGS_ANGULAR_SPREAD_SOURCE_LOCAL  __attribute__ ((visibility ("hidden")))
-#else
-#define EGS_ANGULAR_SPREAD_SOURCE_EXPORT
-#define EGS_ANGULAR_SPREAD_SOURCE_LOCAL
-#endif
+    #ifdef HAVE_VISIBILITY
+        #define EGS_ANGULAR_SPREAD_SOURCE_EXPORT __attribute__ ((visibility ("default")))
+        #define EGS_ANGULAR_SPREAD_SOURCE_LOCAL  __attribute__ ((visibility ("hidden")))
+    #else
+        #define EGS_ANGULAR_SPREAD_SOURCE_EXPORT
+        #define EGS_ANGULAR_SPREAD_SOURCE_LOCAL
+    #endif
 
 #endif
 
@@ -84,9 +84,40 @@ The \c sigma input can be positive or negative.
 If it is positive, it is considered to be the sigma of the Gaussian distribution
 in degrees, if negative, the FWHM of the distribution.
 
+A simple example:
+\verbatim
+:start source definition:
+    :start source:
+        library = egs_parallel_beam
+        name = my_parallel_source
+        :start shape:
+            library = egs_rectangle
+            rectangle = -.1 -.1 .1 .1
+        :stop shape:
+        direction = 0 -1 0
+        charge = 0
+        :start spectrum:
+            type = monoenergetic
+            energy = 1.0
+        :stop spectrum:
+    :stop source:
+
+    :start source:
+        library = egs_angular_spread_source
+        name = my_source
+        sigma = 10
+        source name = my_parallel_source
+    :stop source:
+
+    simulation source = my_source
+
+:stop source definition:
+\endverbatim
+\image html egs_angular_spread_source_s0.png "A simple example with sigma=0"
+\image html egs_angular_spread_source_s10.png "A simple example with sigma=10"
 */
 class EGS_ANGULAR_SPREAD_SOURCE_EXPORT EGS_AngularSpreadSource :
-          public EGS_BaseSource {
+    public EGS_BaseSource {
 
 public:
 
@@ -96,12 +127,16 @@ public:
     };
 
     EGS_I64 getNextParticle(EGS_RandomGenerator *rndm,
-            int &q, int &latch, EGS_Float &E, EGS_Float &wt,
-            EGS_Vector &x, EGS_Vector &u) {
+                            int &q, int &latch, EGS_Float &E, EGS_Float &wt,
+                            EGS_Vector &x, EGS_Vector &u) {
         EGS_I64 c = source->getNextParticle(rndm,q,latch,E,wt,x,u);
         //egsInformation("\nGot u=(%g,%g,%g)\n",u.x,u.y,u.z);
-        if( sigma > 0 ) {
-            EGS_Float cost; do { cost = 1 + sigma*log(1 - rndm->getUniform()); } while (cost <= -1);
+        if (sigma > 0) {
+            EGS_Float cost;
+            do {
+                cost = 1 + sigma*log(1 - rndm->getUniform());
+            }
+            while (cost <= -1);
             EGS_Float cphi, sphi;
             rndm->getAzimuth(cphi,sphi);
             EGS_Float sint = sqrt(1-cost*cost);
@@ -110,14 +145,28 @@ public:
         }
         return c;
     };
-    EGS_Float getEmax() const { return source->getEmax(); };
-    EGS_Float getFluence() const { return source->getFluence(); };
-    bool storeState(ostream &data) const { return source->storeState(data); };
-    bool setState(istream &data) { return source->setState(data); };
-    bool addState(istream &data_in) { return source->addState(data_in); };
-    void resetCounter() { source->resetCounter(); };
+    EGS_Float getEmax() const {
+        return source->getEmax();
+    };
+    EGS_Float getFluence() const {
+        return source->getFluence();
+    };
+    bool storeState(ostream &data) const {
+        return source->storeState(data);
+    };
+    bool setState(istream &data) {
+        return source->setState(data);
+    };
+    bool addState(istream &data_in) {
+        return source->addState(data_in);
+    };
+    void resetCounter() {
+        source->resetCounter();
+    };
 
-    bool isValid() const { return (source != 0); };
+    bool isValid() const {
+        return (source != 0);
+    };
 
 protected:
 

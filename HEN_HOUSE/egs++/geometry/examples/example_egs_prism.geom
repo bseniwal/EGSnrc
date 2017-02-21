@@ -1,7 +1,7 @@
 
 ###############################################################################
 #
-#  EGSnrc additional C shell definitions for BEAMnrc
+#  EGSnrc egs++ sample geometry
 #  Copyright (C) 2015 National Research Council Canada
 #
 #  This file is part of EGSnrc.
@@ -21,32 +21,30 @@
 #
 ###############################################################################
 #
-#  Author:          Iwan Kawrakow, 2004
+#  Author:          Reid Townson, 2016
 #
-#  Contributors:    Blake Walters
+#  Contributors:
 #
 ###############################################################################
 #
-#  Source this file from your .bashrc file if a C shell flavor is your
-#  default shell. It must be sourced AFTER egsnrc_bashrc_additions. You may
-#  put additional definitions and aliases into this file but be aware that
-#  changes will be lost if you rerun the installation. It is therefore better
-#  to put additional system wide definitions in:
+#  An example geometry of EGS_PrismZ.
 #
-#  $HEN_HOUSE/scripts/local_cshrc_additions
 #
 ###############################################################################
 
 
-#  Environment variables
-#
-setenv OMEGA_HOME $HEN_HOUSE/omega
+:start geometry definition:
+    :start geometry:
+        name        = my_prism
+        library     = egs_prism
+        type        = EGS_PrismZ
+        points      = 1 1  -1 1  -1 -1  4 -1
+        closed      = 1 4
+        :start media input:
+            media = water
+        :stop media input:
+    :stop geometry:
 
-#  Aliases
-#
-alias beamnrc_gui '$OMEGA_HOME/progs/gui/beamnrc/beamnrc_gui.tcl'
-alias beam_gui '$OMEGA_HOME/progs/gui/beamnrc/beamnrc_gui.tcl'
-alias dosxyznrc_gui '$OMEGA_HOME/progs/gui/dosxyznrc/dosxyznrc_gui.tcl'
-alias dosxyz_gui '$OMEGA_HOME/progs/gui/dosxyznrc/dosxyznrc_gui.tcl'
-alias beamdp_gui '$OMEGA_HOME/progs/gui/beamdp/beamdp_gui.tcl'
-alias pprocess '$HEN_HOUSE/scripts/pprocess'
+    simulation geometry = my_prism
+
+:stop geometry definition:

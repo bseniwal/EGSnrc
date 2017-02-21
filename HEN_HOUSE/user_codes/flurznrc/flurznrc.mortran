@@ -31,6 +31,7 @@
 "                   Blake Walters                                             "
 "                   Iwan Kawrakow                                             "
 "                   Ernesto Mainegra-Hing                                     "
+"                   Reid Townson                                              "
 "                                                                             "
 "#############################################################################"
 "                                                                             "
@@ -2794,7 +2795,7 @@ IF(IFLDIF = 1)[
 ]
 
 IF(SLOTE > 0.0)["EQUAL BIN WIDTHS"
-   /EBINW(1,1),EBINW(1,3)/ = SLOTE - (ECUTMX-0.5110034);
+   /EBINW(1,1),EBINW(1,3)/ = SLOTE - (ECUTMX-PRM);
    IF(EBINW(1,1) <= 0.0)[/EBINW(1,1),EBINW(1,3)/=1.E10;]
    "above in case large ECUT means electron bins don't exist"
    EBINW(1,2) = SLOTE - PCUTMX;
@@ -2805,7 +2806,7 @@ IF(SLOTE > 0.0)["EQUAL BIN WIDTHS"
 ]
 
 ELSE ["SLOTE=0.0 and SLOTE<0 CASE"
-   /EBINW(1,1),EBINW(1,3)/ = BINTOP(1) - (ECUTMX-0.5110034);
+   /EBINW(1,1),EBINW(1,3)/ = BINTOP(1) - (ECUTMX-PRM);
    EBINW(1,2) = BINTOP(1) - PCUTMX;
    DO IB = 2,MAXIB[DO IQL=1,3[
       EBINW(IB,IQL) = BINTOP(IB)-BINTOP(IB-1) ;
@@ -2897,18 +2898,19 @@ IF (ERROR_FLAG=1) [
    OUTPUT ;(//' **********  ERRORS AND WARNING MESSAGES  ********** '//);
 ]
 
-REWIND (15);
+rewind (i_errors);
 9998 CONTINUE;
-     READ (15, END=9999, FMT='(A80)') TEXT;
+     READ (i_errors, END=9999, FMT='(A80)') TEXT;
      WRITE (*,'(A79)') TEXT;
      GOTO 9998;
 9999 CONTINUE;
+backspace(i_errors);
 " ******* IK: using wrapper subroutines for date and time.
 " Was:
 " WRITE(15 , 400) DATEN,TIMEN;
 " WRITE(IOUT,400) DATEN,TIMEN;
-write(15,400); call egs_fdate(15); write(15,*);
-write(iout,400); call egs_fdate(iout); write(iout,*);
+write(i_errors,400); call egs_fdate(i_errors); write(i_errors,*);
+write(iout,400);     call egs_fdate(iout);     write(iout,*);
 
 call egs_finish;
 
@@ -3177,7 +3179,9 @@ IF(IARG = 0)["transport step about to happen"
         "IBDOWN is the actual bin being considered, IBTOP to 1                 "
         IBDOWN = IBTOP - IB +1;
 
-        IF(IBDOWN=1)[BINBOT=ECUT(IRL)-0.5110034;] ELSE[BINBOT=BINTOP(IBDOWN-1);]
+        IF(IBDOWN=1)[
+          BINBOT=ECUT(IRL)-PRM;
+        ] ELSE[BINBOT=BINTOP(IBDOWN-1);]
 
         IF(IB=1)["bin with initial energy" BINFR(IB)=(EKIN-BINBOT)/EDEP;]
         ELSE [ BINFR(IB) = (BINTOP(IBDOWN) - BINBOT)/EDEP;]
@@ -3188,7 +3192,7 @@ IF(IARG = 0)["transport step about to happen"
         "    bin, but it will be reduced to the correct value below         "
 
         IF( (BINFR(IB) >= 1.0 - FRSUM)  |  IBDOWN=1 |
-            (BINBOT<=ECUT(IRL)-0.5110034) )[
+            (BINBOT<=ECUT(IRL)-PRM) )[
            "this must be the last bin - "
            "first condition is true if the final energy in the  "
            "step is greater than BINBOT, second condition means there"
@@ -3197,7 +3201,7 @@ IF(IARG = 0)["transport step about to happen"
            "in first and last cases, we must correct BINFR            "
 
            IF((BINFR(IB) >= 1.0-FRSUM) |
-              (BINBOT<=ECUT(IRL)-0.5110034 & IBDOWN>1))[
+              (BINBOT<=ECUT(IRL)-PRM & IBDOWN>1))[
                  "final energy is in this bin"
                 BINFR(IB) = 1.0 - FRSUM; ]
 
@@ -3966,14 +3970,14 @@ ELSEIF (SLOTE = -999) ["set up linear/log bins for SPR calcns"
                        "10% of bins cover top 10% of spectrum"
                        "rest are equal logarithmic"
    LINBIN = int(float($EBIN)/10. + 0.5); "no of bins to cover 10%"
-   DELLIN = (EIN - (ECUTIN-0.5110034))*0.10/dble(LINBIN);
+   DELLIN = (EIN - (ECUTIN-PRM))*0.10/dble(LINBIN);
    OUTPUT LINBIN,DELLIN;(/' ***SLOTE=-999***', I4,' BINS OF',F10.4,' MEV'/);
    MAXIB = $EBIN; BINTOP(MAXIB) = EIN;
    DO I =1,linbin[
      BINTOP(MAXIB-I) = EIN-(dble(I)*DELLIN);]
    "now set up logarithmic bins"
-    RATIO=(BINTOP(MAXIB-LINBIN)/(ECUTIN-0.5110034))**(1./dble(MAXIB-LINBIN));
-    BINTOP(1) = (ECUTIN - 0.5110034)*RATIO;
+    RATIO=(BINTOP(MAXIB-LINBIN)/(ECUTIN-PRM))**(1./dble(MAXIB-LINBIN));
+    BINTOP(1) = (ECUTIN - PRM)*RATIO;
     DO IB = 2,MAXIB-LINBIN[
       BINTOP(IB) = BINTOP(IB-1)*RATIO;]
     OUTPUT MAXIB,ECUTIN,(BINTOP(IB),IB=1,MAXIB);(/I4,' SPR ENERGY ',
@@ -3985,8 +3989,8 @@ ELSEIF (SLOTE < 0.0) [ "SET UP -SLOTE EQUAL LOGARITHMIC BINS"
              ' ASKED FOR REDUCED TO MAX OF ', I4,' ****');]
     "  maximum energy in problem is EIN, and we use electron lowest"
     "  energy to set the bins equally from ECUTIN to EIN"
-    RATIO = (EIN /(ECUTIN-0.5110034))**(1./dble(MAXIB));
-    BINTOP(1) = (ECUTIN-0.5110034)*RATIO;
+    RATIO = (EIN /(ECUTIN-PRM))**(1./dble(MAXIB));
+    BINTOP(1) = (ECUTIN-PRM)*RATIO;
     DO IB=2,MAXIB-1 [
            BINTOP(IB) = RATIO * BINTOP(IB-1);]
     BINTOP(MAXIB) = EIN; "TO AVOID ROUND-OFF ERRORS"
@@ -4062,10 +4066,10 @@ VALUES_SOUGHT(IVAL)='ESAVEIN';
 NVALUE(IVAL)=1;
 TYPE(IVAL)=1;
 VALUE_MIN(IVAL)=0.;
-VALUE_MAX(IVAL)=EIN+0.511;  "EIN is max k.e. of particles set in srcrz for"
-                         "ISOURC 21,22 and ine ensrc for the others"
-DEFAULT(IVAL)=EIN+0.511;  "defaults to max energy in case too high a value"
-                          " is input, => still do range rej"
+VALUE_MAX(IVAL)=EIN+PRM;  "EIN is max k.e. of particles set in srcrz"
+                         "for ISOURC 21,22 and ine ensrc for the others"
+DEFAULT(IVAL)=EIN+PRM;  "defaults to max energy in case too high "
+                          " a value is input, => still do range rej"
 
 DELIMETER='VARIANCE REDUCTION';
 $GET_INPUTS(NUM_BREMSPLIT,NUM_ESAVEIN);
@@ -4864,13 +4868,14 @@ $REAL XCOORD($EBIN), YCOORD($EBIN), UNCERT($EBIN);
 INTEGER NPTS, PLTYPE, AXISTYPE, CURVENUM, inte, CHECK;
 INTEGER IZR, IXR;
 INTEGER UNITNUM, IPLTSPEC;
+CHARACTER*80 GRAPHTITLE;
 CHARACTER*60 SERIESTITLE, XTITLE, YTITLE,SUBTITLE;
 CHARACTER*4 CH_IZ, CH_IX, CH_IQ, CH_IP, CH_IRL;
 CHARACTER*1 a(3);
 character backslash;
 LOGICAL NEGVAL;
 
-;COMIN/GEOM,BOUNDS,IODAT1,IODAT2,PRINTC,PLOTC,SCORE/;
+;COMIN/GEOM,BOUNDS,IODAT1,IODAT2,PRINTC,PLOTC,SCORE,USEFUL/;
 "March 9, 2012 DR added BOUNDS to correct first energy in point plot"
 
 
@@ -5147,6 +5152,8 @@ DO IZ=1,NZ [ "determine the max and min fluence"
 "Plot of fluence zone results to file [-.spectra]"
 "this was already opened in
 
+DO I=1,80[GRAPHTITLE(I:I)=TITLE(I);]
+
 UNITNUM=IPLTSPEC;
 CURVENUM=0;
 DO IQ=1,4 [ "Q=4 is for electrons and positrons"
@@ -5193,7 +5200,7 @@ DO IQ=1,4 [ "Q=4 is for electrons and positrons"
                       XCOORD(IB) = (BINTOP(IB) + PCUT(2))/2.
                    ]
                    ELSE ["a charged particle"
-                      XCOORD(IB) = (BINTOP(IB) + (ECUT(2)-0.5110034))/2.
+                      XCOORD(IB) = (BINTOP(IB) + (ECUT(2)-PRM))/2.
                    ]
                ]"end of IB=1 block"
                ELSE [
@@ -5224,7 +5231,7 @@ DO IQ=1,4 [ "Q=4 is for electrons and positrons"
              "plot XY-graph"
              CALL XVGRPLOT (XCOORD, YCOORD, UNCERT,
                             NPTS, CURVENUM, SERIESTITLE,
-                            XTITLE, YTITLE, TITLE, SUBTITLE,
+                            XTITLE, YTITLE, GRAPHTITLE, SUBTITLE,
                             UNITNUM, PLTYPE, HISTXMIN, AXISTYPE);
            CURVENUM=CURVENUM+1; "DEFINE A NEW PLOT"
         ]  "end of point plot"
@@ -5251,7 +5258,7 @@ DO IQ=1,4 [ "Q=4 is for electrons and positrons"
             "We now assume that the cutoffs in region 2 are the same"
             "everywhere"
             "Had to add comin BOUNDS to PLOTSN to get ECUT/PCUT"
-            IF(IQ=2)[BIN_CUT=PCUT(2);] ELSE [BIN_CUT=ECUT(2)-0.5110034;]
+            IF(IQ=2)[BIN_CUT=PCUT(2);] ELSE [BIN_CUT=ECUT(2)-PRM;]
 
              "Convert regional number(IRL) to a character string"
              IRLR=IRL; $CONVERT_INT(IRLR)_TO_CHAR(CH_IRL);
@@ -5267,7 +5274,7 @@ DO IQ=1,4 [ "Q=4 is for electrons and positrons"
              "plot histogram"
              CALL XVGRPLOT (XCOORD, YCOORD, UNCERT,
                             NPTS, CURVENUM, SERIESTITLE,
-                            XTITLE, YTITLE, TITLE, SUBTITLE,
+                            XTITLE, YTITLE, GRAPHTITLE, SUBTITLE,
                             UNITNUM, PLTYPE, HISTXMIN, AXISTYPE);
              CURVENUM=CURVENUM+1; "DEFINE A NEW PLOT"
         ]    "END OF HISTOGRAM PLOT"
@@ -5354,7 +5361,7 @@ DO IQ=1,3[
            "plot XY-graph"
            CALL XVGRPLOT (XCOORD, YCOORD, UNCERT,
                           NPTS, CURVENUM, SERIESTITLE,
-                          XTITLE, YTITLE, TITLE, SUBTITLE,
+                          XTITLE, YTITLE, GRAPHTITLE, SUBTITLE,
                           UNITNUM, PLTYPE, HISTXMIN, AXISTYPE);
            CURVENUM=CURVENUM+1; "DEFINE A NEW PLOT"
         ]  "END OF POINT PLOT"
@@ -5378,7 +5385,7 @@ DO IQ=1,3[
            "plot histogram"
            CALL XVGRPLOT (XCOORD, YCOORD, UNCERT,
                           NPTS, CURVENUM, SERIESTITLE,
-                          XTITLE, YTITLE, TITLE, SUBTITLE,
+                          XTITLE, YTITLE, GRAPHTITLE, SUBTITLE,
                           UNITNUM, PLTYPE, HISTXMIN, AXISTYPE);
            CURVENUM=CURVENUM+1; "DEFINE A NEW PLOT"
         ]  "END OF HISTOGRAM PLOT"
@@ -5437,7 +5444,7 @@ DO IQ=1,3[
                    "plot XY-graph"
                    CALL XVGRPLOT (XCOORD, YCOORD, UNCERT,
                                   NPTS, CURVENUM, SERIESTITLE,
-                                  XTITLE, YTITLE, TITLE, SUBTITLE,
+                                  XTITLE, YTITLE, GRAPHTITLE, SUBTITLE,
                                   UNITNUM, PLTYPE, HISTXMIN, AXISTYPE);
                    CURVENUM=CURVENUM+1; "DEFINE A NEW PLOT"
                 ]  "end of point plot"
@@ -5468,7 +5475,7 @@ DO IQ=1,3[
                    "plot histogram"
                    CALL XVGRPLOT (XCOORD, YCOORD, UNCERT,
                                   NPTS, CURVENUM, SERIESTITLE,
-                                  XTITLE, YTITLE, TITLE, SUBTITLE,
+                                  XTITLE, YTITLE, GRAPHTITLE, SUBTITLE,
                                   UNITNUM, PLTYPE, HISTXMIN, AXISTYPE);
                    CURVENUM=CURVENUM+1; "DEFINE A NEW PLOT"
                 ]  "END OF HISTOGRAM"
