@@ -98,6 +98,9 @@ waitTime=1
 # This will be the name of the process once it is submitted, default value of
 # the input file name.  Can be set manually using n=X
 jobName=${inputName}
+
+# Used to look for lock file
+startCheckFlag=1
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 
 # Extra Checks ~~~~~~~~~~~~~~~~~~~~~~~~~#
@@ -548,11 +551,15 @@ if test $n_parallel -gt 0; then
 	    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 	    # Modify Batch Options ~~~~~~~~~~~~~~~~~#
 	    # Only submit non-first files after lock has been created
-	    while test $job != $(($start_job + 1)); do
+		if [ $job == $(($start_job + 2)) ] ; then
+	  	  printf "Waiting for ${EGS_HOME}/${user_code}/${input_file}.lock file generation"
+		fi
+	    while test $job == $(($start_job + 2)); do
 	  	  if [ -e "${EGS_HOME}/${user_code}/${input_file}.lock" ] ; then
+		    echo " found."
 	  	    break
 		  else
-			echo "Waiting for ${EGS_HOME}/${user_code}/${input_file}.lock file generation..."
+			printf "."
 			sleep $batch_sleep_time
 	  	  fi
 	    done
