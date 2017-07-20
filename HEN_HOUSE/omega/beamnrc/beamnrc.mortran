@@ -2298,11 +2298,13 @@ REPLACE {;$MED_INPUT(#);} WITH {
 
 REPLACE {;COMIN/CMs/;} WITH {
 ;COMMON/CMs/
-   E_min_out,MAX_CMs,MED_IN,ICM,ICMNEW,ICM_to_SCORE,IERR_GEOM,IR_start_CM,
-   IR_to_CM,RMAX_CM,RMAX_CM2,RMAX_CM_FLAG,Z_min_CM,Z_gap_THICK,
-   Z_min_thick,MED_min_thick,
-   ITDOSE_ON,ICM_CONTAM,IQ_CONTAM,XTUBE_EXISTS,ANGLE,CMTYPE,CMLIST,AIR_INDEX,
-   IDIRG,BEAM_MU_INDEX,BEAM_MU_INDEX_OLD;
+   Z_min_CM,Z_gap_THICK,E_min_out,RMAX_CM,RMAX_CM2,Z_min_thick,ANGLE,
+   BEAM_MU_INDEX,BEAM_MU_INDEX_OLD,
+   ICM,ICMNEW,ICM_to_SCORE,IERR_GEOM,
+   IR_start_CM,MAX_CMs,IR_to_CM,RMAX_CM_FLAG,
+   MED_min_thick,
+   ITDOSE_ON,ICM_CONTAM, IQ_CONTAM,XTUBE_EXISTS,AIR_INDEX,IDIRG,
+   MED_IN, CMTYPE, CMLIST;
 $REAL Z_min_CM($MAX_CMsP1),$LGN(Z_gap_THICK,
    E_min_out,RMAX_CM,RMAX_CM2($MAX_CMs)),Z_min_thick($MAX_CMs,5),ANGLE,
    BEAM_MU_INDEX,BEAM_MU_INDEX_OLD;
@@ -4394,7 +4396,7 @@ return; end;
 subroutine beam_shower(icase);
 /**************************************************************************/
 implicit none;
-$INTEGER icase;
+$LONG_INT icase;
 
 ;COMIN/SCORE,SOURCE,EPCONT,RANDOM,CMs,USER,IO_INFO,TIMING-INFO,USEFUL,EGS-IO,
 RWPHSP/;
@@ -4595,7 +4597,6 @@ implicit none;
 INTEGER
    I,I1,I2,I3,I4,IT, "T>DO loop indices
    TOT_BATCH,    "T>Total number of batches processed
-   ICASE,        "T>
    IRIN,         "T>
    ITMAX,        "T>Number of dose components
    RESETWATCH,   "T>used to reset IWATCH to 0 when IWATCH<0
@@ -4604,6 +4605,7 @@ INTEGER
    lnblnk1;      "T> built-in lnblnk function
 
 $LONG_INT
+   ICASE,
    NHSTRY_OLD;   "T>used to store previous version of NHSTRY before call
                  "  to SRCHST"
 $DECLARE_TIMING_VARIABLES;   "timing_variables CPUT0/1/2 TZERO ETIME UTIME_"

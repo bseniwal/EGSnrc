@@ -320,7 +320,7 @@ public:
 
 
         int j = ifirst;
-        int ij = -1, ig;
+        int ij = -1, ig=0;
         for (EGS_I64 loopCount=0; loopCount<=loopMax; ++loopCount) {
             if (loopCount == loopMax) {
                 egsFatal("EGS_EnvelopeGeometry::computeIntersections: Too many iterations were required! Input may be invalid, or consider increasing loopMax.");
@@ -342,7 +342,7 @@ public:
             if (ireg < nbase) { // in one of the regions of the base geometry
                 t = veryFar;
                 int ibase = g->howfar(ireg,x,u,t,&imed);
-                ij = -1, ig;
+                ij = -1;
                 for (int i=0; i<n_in; i++) {
                     int ireg_i = geometries[i]->howfar(-1,x,u,t,&imed);
                     if (ireg_i >= 0) {
@@ -573,8 +573,20 @@ public:
         return geometries[jg]->getRelativeRho(ireg - nbase - jg*nmax);
     };
 
-    virtual void getLabelRegions(const string &str, vector<int> &regs);
+    void setBScaling(int start, int end, EGS_Float bf);
+    void setBScaling(EGS_Input *);
+    EGS_Float getBScaling(int ireg) const {
+        if (ireg < 0 || ireg >= nreg) {
+            return 1;
+        }
+        if (ireg < nbase) {
+            return g->getBScaling(ireg);
+        }
+        int jg = (ireg - nbase)/nmax;
+        return geometries[jg]->getBScaling(ireg - nbase - jg*nmax);
+    };
 
+    virtual void getLabelRegions(const string &str, vector<int> &regs);
 
 protected:
 
@@ -713,7 +725,7 @@ public:
 
 
         int j = ifirst;
-        int ij = -1, ig;
+        int ij = -1, ig=0;
         for (EGS_I64 loopCount=0; loopCount<=loopMax; ++loopCount) {
             if (loopCount == loopMax) {
                 egsFatal("EGS_FastEnvelope::computeIntersections: Too many iterations were required! Input may be invalid, or consider increasing loopMax.");
@@ -732,7 +744,7 @@ public:
                 t = veryFar;
                 int ibase = g->howfar(ireg,x,u,t,&imed);
                 //egsInformation("In base geometry: t=%g inew=%d\n",t,ibase);
-                ij = -1, ig;
+                ij = -1;
                 for (int ii=n_start[ireg]; ii<n_start[ireg+1]; ii++) {
                     int i = glist[ii];
                     int ireg_i = geometries[i]->howfar(-1,x,u,t,&imed);
@@ -963,8 +975,20 @@ public:
         return geometries[jg]->getRelativeRho(ireg - nbase - jg*nmax);
     };
 
-    virtual void getLabelRegions(const string &str, vector<int> &regs);
+    void setBScaling(int start, int end, EGS_Float bf);
+    void setBScaling(EGS_Input *);
+    EGS_Float getBScaling(int ireg) const {
+        if (ireg < 0 || ireg >= nreg) {
+            return 1;
+        }
+        if (ireg < nbase) {
+            return g->getBScaling(ireg);
+        }
+        int jg = (ireg - nbase)/nmax;
+        return geometries[jg]->getBScaling(ireg - nbase - jg*nmax);
+    };
 
+    virtual void getLabelRegions(const string &str, vector<int> &regs);
 
 protected:
 

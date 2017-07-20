@@ -906,7 +906,13 @@ comp_xsections = $COMP-XDATA-DEFAULT;
 photonuc_xsections = $PHOTONUC-XDATA-DEFAULT;
 "EMH:emf"
 ExIN=$ExDEF;EyIN=$EyDEF;EzIN=$EzDEF;
+" Initially set to input values, could change with regions"
+" by converting it to an array over all regions. This is  "
+" currently implemented ONLY for the C++ applications     "
 BxIN=$BxDEF;ByIN=$ByDEF;BzIN=$BzDEF; EMLMTIN=$EMLMTDEF;
+Bx=BxIN;    By=ByIN;    Bz=BzIN;
+Bx_new=Bx;  By_new=By;  Bz_new=Bz;
+
 "DO i=1,len(eii_xfile) [ eii_xfile(i:i) = ' '; ]"
 DO i=1,$MXMED [
     iraylm(i) = 0;   "Rayleigh data available?"
@@ -915,7 +921,7 @@ DO i=1,$MXMED [
       " set all thresholds to zero "
     /ae(i),ap(i),ue(i),up(i),te(i),thmoll(i)/=0;
 ]
-DO i=1,$MXSHELL [
+DO i=1,$MXSHXSEC [
   DO j=1,$MXELEMENT [ binding_energies(i,j) = 0; ]
 ]
 ibrdst = $IBRDST-DEFAULT;      " brems angular sampling"
