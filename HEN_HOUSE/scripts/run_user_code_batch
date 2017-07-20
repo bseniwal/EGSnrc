@@ -98,6 +98,8 @@ waitTime=1
 # This will be the name of the process once it is submitted, default value of
 # the input file name.  Can be set manually using n=X
 jobName=${inputName}
+clock=1d
+memory=2G
 
 # Used to look for lock file
 startCheckFlag=1
@@ -223,7 +225,9 @@ EOF
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 # Parsing Variables ~~~~~~~~~~~~~~~~~~~~#
            t=*)  waitTime=`echo $1 | sed 's/t=//'` ;;
-           n=*)  jobName=`echo $1 | sed 's/n=//'` ;;
+           r=*)  clock=`echo $1 | sed 's/r=//'` ;;
+           m=*)  memory=`echo $1 | sed 's/m=//'` ;;
+           j=*)  job_name=`echo $1 | sed 's/j=//'` ;;
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
              *) # concatenate everything else to other_args
@@ -446,23 +450,6 @@ if test $egs_batch_system = at; then
     fi
 fi
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ MARTIN CHANGES ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-# Modify Batch Options ~~~~~~~~~~~~~~~~~#
-# Edit what we need to before entering the submission loops but after the batch_options file is loaded
-    batch_sleep_time=$waitTime
-    other_args=" -N "${jobName}${other_args}
-
-if [ -e "/home/${USER}/batch_eo_files/${basename}_w1.eo" ] ; then
-    rm "/home/${USER}/batch_eo_files/${basename}_w*.eo" -f
-fi
-if [ -e "/home/${USER}/batch_eo_files/${basename}.eo" ] ; then
-    rm "/home/${USER}/batch_eo_files/${basename}.eo" -f
-fi
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-
 ###############################################################################
 # pbsdsh runs
 #
@@ -522,20 +509,6 @@ if test $n_parallel -gt 0; then
     #if test $job -gt $n_parallel; then break; fi
     if test $job -gt $stop_job; then break; fi
     batch_options="$generic_bo"
-    if test "x$output_bo" != x; then # Added location for .eo files
-        batch_options="$batch_options $output_bo /home/${USER}/batch_eo_files/${input_file}_w${job}.eo"
-    fi
-    if test "x$rname_bo" != x; then
-        rn="${user_code}_${input_file}_w${job}"
-        len=`echo $rn | wc -c`
-        if test $len -gt $batch_mnl; then
-            len1=`expr $len - $batch_mnl + 1`
-            rname=`echo $rn | cut -c $len1-`
-        else
-            rname=$rn
-        fi
-        batch_options="$batch_options $rname_bo j$rname"
-    fi
     if test $fresh = no; then
         the_command="$command -j $job"
     else
@@ -543,29 +516,12 @@ if test $n_parallel -gt 0; then
     fi
     if test "x$testing" = xyes; then
         echo "Executing $the_command using $batch_command"
-        echo "batch options: $batch_options $queue $other_args"
+        echo "batch options: $batch_options -o /work/${USER}/Batch_Output/${user_code}/${input_file}/${input_file}_w${job}.eo $queue $other_args"
     else
-	  
-	    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-	    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ MARTIN CHANGES ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-	    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-	    # Modify Batch Options ~~~~~~~~~~~~~~~~~#
-	    # Only submit non-first files after lock has been created
-		if [ $job == $(($start_job + 2)) ] ; then
-	  	  printf "Waiting for ${EGS_HOME}/${user_code}/${input_file}.lock file generation"
-		fi
-	    while test $job == $(($start_job + 2)); do
-	  	  if [ -e "${EGS_HOME}/${user_code}/${input_file}.lock" ] ; then
-		    echo " found."
-	  	    break
-		  else
-			printf "."
-			sleep $batch_sleep_time
-	  	  fi
-	    done
-	    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-	    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-        echo "$the_command" | $batch_command $batch_options $queue $other_args
+	    echo '#!/bin/bash' > /work/${USER}/Batch_Output/${user_code}/${input_file}/${input_file}_w${job}.exe
+		echo $the_command >> /work/${USER}/Batch_Output/${user_code}/${input_file}/${input_file}_w${job}.exe
+		chmod 500 /work/${USER}/Batch_Output/${user_code}/${input_file}/${input_file}_w${job}.exe
+        $batch_command $batch_options -o "/work/${USER}/Batch_Output/${user_code}/${input_file}/${input_file}_w${job}.eo" $queue $other_args /work/${USER}/Batch_Output/${user_code}/${input_file}/${input_file}_w${job}.exe
     fi
     if test "x$batch_sleep_time" != x; then
         sleep $batch_sleep_time
@@ -573,25 +529,14 @@ if test $n_parallel -gt 0; then
   done
 else
   batch_options="$generic_bo"
-  if test "x$output_bo" != x; then # Added location for .eo files
-      batch_options="$batch_options $output_bo /home/${USER}/batch_eo_files/${input_file}.eo"
-  fi
-  if test "x$rname_bo" != x; then
-      rn="${user_code}_${input_file}"
-      len=`echo $rn | wc -c`
-      if test $len -gt $batch_mnl; then
-          len1=`expr $len - $batch_mnl + 1`
-          rname=`echo $rn | cut -c $len1-`
-      else
-          rname=$rn
-      fi
-      batch_options="$batch_options $rname_bo j$rname"
-  fi 
   if test "x$testing" = xyes; then
       echo "Executing $command using $batch_command"
-      echo "batch options: $batch_options $queue $other_args"
+      echo "batch options: $batch_options -o /work/${USER}/Batch_Output/${user_code}/${input_file}/${input_file}_w${job}.eo $queue $other_args"
   else
-      echo "$command" | $batch_command $batch_options $queue $other_args
+	  echo '#!/bin/bash' > /work/${USER}/Batch_Output/${user_code}/${input_file}/${input_file}_w${job}.exe
+	  echo $command >> /work/${USER}/Batch_Output/${user_code}/${input_file}/${input_file}_w${job}.exe
+	  chmod 500 /work/${USER}/Batch_Output/${user_code}/${input_file}/${input_file}_w${job}.exe
+	  $batch_command $batch_options -o "/work/${USER}/Batch_Output/${user_code}/${input_file}/${input_file}_w${job}.eo" $queue $other_args /work/${USER}/Batch_Output/${user_code}/${input_file}/${input_file}_w${job}.exe
   fi
 fi
 exit 0
