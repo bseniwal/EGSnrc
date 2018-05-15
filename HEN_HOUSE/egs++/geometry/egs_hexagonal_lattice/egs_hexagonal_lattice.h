@@ -317,11 +317,17 @@ public:
 				t = tempT;				
 				
 				//egsWarning("\tbase howfar(%6d, [%e,%e,%e], [%e,%e,%e], %e)\n",ind, x.x, x.y, x.z, u.x, u.y, u.z, t);
-				tempReg = base->howfar(ind,x,u,t,0,normal);
+				tempReg = base->howfar(base->isWhere(x),x,u,t,0,normal);
 				if (newmed && tempReg >= 0)
 					*newmed = base->medium(tempReg);
 				//egsWarning("\treturn %d (%e)\n",tempReg,t);
 				//egsWarning("new x should be[%e,%e,%e]\n",x.x+t*u.x,x.y+t*u.y,x.z+t*u.z);
+				
+				if (t<0)
+				{
+					egsWarning("Returning negative t from subgeom\n");
+					egsWarning("howfar(%7d,[%e,%e,%e],[%e,%e,%e],%e)\n",ireg, x.x, x.y, x.z, u.x, u.y, u.z, t);
+				}
 				return tempReg;
 			}
 			
@@ -330,6 +336,12 @@ public:
 				*newmed = sub->medium(tempReg);
 			//egsWarning("\treturn %d (%e)\n",tempReg+base->regions(),t);
 			//egsWarning("new x should be[%e,%e,%e]\n",x.x+t*u.x,x.y+t*u.y,x.z+t*u.z);
+			
+			if (t<0)
+			{
+				egsWarning("Returning negative t from subgeom\n");
+				egsWarning("howfar(%7d,[%e,%e,%e],[%e,%e,%e],%e)\n",ireg, x.x, x.y, x.z, u.x, u.y, u.z, t);
+			}
 			return tempReg+base->regions();
 		}
 		else if (ireg == ind) // If we are in the region that could contain subgeoms
@@ -356,7 +368,7 @@ public:
 				tempP = closestPoint(x0);
 				sub->setTransformation(tempP);
 				if (sub->howfar(-1,x,u,tempT)+1) // Intersection!
-					if(tempT < minX)
+					if(tempT < minX && tempT > 0)
 					{
 						finalX = tempP;
 						minX = tempT;
@@ -372,7 +384,7 @@ public:
 				tempP = closestPoint(x0);
 				sub->setTransformation(tempP);
 				if (sub->howfar(-1,x,u,tempT)+1) // Intersection!
-					if(tempT < minY)
+					if(tempT < minY && tempT > 0)
 					{
 						finalY = tempP;
 						minY = tempT;
@@ -388,7 +400,7 @@ public:
 				tempP = closestPoint(x0);
 				sub->setTransformation(tempP);
 				if (sub->howfar(-1,x,u,tempT)+1) // Intersection!
-					if(tempT < minZ)
+					if(tempT < minZ && tempT > 0)
 					{
 						finalZ = tempP;
 						minZ = tempT;
@@ -405,7 +417,7 @@ public:
 			tempT = max;
 			sub->setTransformation(closestPoint(x+unit*tempT));
 			sub->howfar(-1,x,u,tempT);
-			if (tempT < min)
+			if (tempT < min  && tempT > 0)
 			{
 				min = tempT;
 				finalP = closestPoint(x+unit*tempT);
@@ -416,20 +428,29 @@ public:
 			{
 				tempT = t;
 				sub->setTransformation(finalP);
-				int tempReg = sub->howfar(-1,x,u,tempT,newmed,normal);
+				int tempReg = sub->howfar(-1,x,u,t,newmed,normal);
 				if (tempReg+1)
 				{
 					if (newmed && tempReg >= 0)
 						*newmed = sub->medium(tempReg);
-					t = tempT;
 					//egsWarning("\treturn %d (%f)\n",tempReg+base->regions(),t);
 					//egsWarning("new x should be[%e,%e,%e]\n",x.x+t*u.x,x.y+t*u.y,x.z+t*u.z);
+					if (t<0)
+					{
+						egsWarning("Returning negative t from region %d in base geom t\n", ind);
+						egsWarning("howfar(%7d,[%e,%e,%e],[%e,%e,%e],%e)\n",ireg, x.x, x.y, x.z, u.x, u.y, u.z, t);
+					}
 					return tempReg+base->regions();
 				}
 			}
 			
 			// We didn't intersect subgeom
 			int tempReg = base->howfar(ireg,x,u,t,newmed,normal);
+			if (t<0)
+			{
+				egsWarning("Returning negative t from region %d in base geom\n", ind);
+				egsWarning("howfar(%7d,[%e,%e,%e],[%e,%e,%e],%e)\n",ireg, x.x, x.y, x.z, u.x, u.y, u.z, t);
+			}
 			if (newmed && tempReg >= 0)
 				*newmed = base->medium(tempReg);
 			//egsWarning("new x should be[%e,%e,%e]\n",x.x+t*u.x,x.y+t*u.y,x.z+t*u.z);
@@ -457,6 +478,11 @@ public:
 						*newmed = sub->medium(newReg);
 					//egsWarning("\treturn %d (%f)\n",newReg+base->regions(),t);
 					//egsWarning("new x should be[%e,%e,%e]\n",x.x+t*u.x,x.y+t*u.y,x.z+t*u.z);
+					if (t<0)
+					{
+						egsWarning("Returning negative t from region not %d in base geom\n", ind);
+						egsWarning("howfar(%7d,[%e,%e,%e],[%e,%e,%e],%e)\n",ireg, x.x, x.y, x.z, u.x, u.y, u.z, t);
+					}
 					return newReg + base->regions();
 				}
 			}
@@ -465,6 +491,11 @@ public:
 				*newmed = base->medium(tempReg);
 			//egsWarning("\treturn %d (%f)\n",tempReg,t);
 			//egsWarning("new x should be[%e,%e,%e]\n",x.x+t*u.x,x.y+t*u.y,x.z+t*u.z);
+			if (t<0)
+			{
+				egsWarning("Returning negative t from region not %d in base geom\n", ind);
+				egsWarning("howfar(%7d,[%e,%e,%e],[%e,%e,%e],%e)\n",ireg, x.x, x.y, x.z, u.x, u.y, u.z, t);
+			}
 			return tempReg;
 		}
     };
