@@ -62,7 +62,7 @@ public:
 
     ~EGS_DummyGeometry() { if( !g->deref() ) delete g; };
 
-    void setTransformation(const EGS_AffineTransform &t) {/*cout<<"\t\tTransformation changed to ["<<t.getTranslation().x<<","<<t.getTranslation().y<<","<<t.getTranslation().z<<"]\n";*/ T = t; };
+    void setTransformation(const EGS_AffineTransform &t) { T = t; };
 
     int computeIntersections(int ireg, int n, const EGS_Vector &x,
             const EGS_Vector &u, EGS_GeometryIntersections *isections) {
@@ -251,12 +251,16 @@ public:
     int isWhere(const EGS_Vector &x)
 	{
 		int temp = base->isWhere(x);
-		
 		// Are we in the subgeom?
 		if (temp == ind)
 		{
+			//base->printInfo();
+			//egsWarning("\nChecking position!\n");
+			//egsWarning("\t[%e,%e,%e]\n",x.x, x.y, x.z);
+			//egsWarning("\twhere r = %e\n", sqrt((x.x*x.x)+(x.y*x.y)+(x.z*x.z)));
 			//cout << "\tisWhere invoking setTransformation\n";
 			sub->setTransformation(closestPoint(x));
+			//egsWarning("\twith region = %d\n", sub->isWhere(x) + base->regions());
 			if (sub->isInside(x))
 				return sub->isWhere(x) + base->regions();
 		}
@@ -289,12 +293,8 @@ public:
 	// This is where things get messy, this function will be trimodal, whether we are in non-ind base, ind base or sub
     int howfar(int ireg, const EGS_Vector &x, const EGS_Vector &u, EGS_Float &t, int *newmed=0, EGS_Vector *normal=0)
 	{
-		//egsWarning("howfar(%7d,[%e,%e,%e],[%e,%e,%e],%e)\n",ireg, x.x, x.y, x.z, u.x, u.y, u.z, t);
-		//egsWarning("\tradius of x %e\n",sqrt((x.x*x.x)+(x.y*x.y)+(x.z*x.z)));
-		//if (sqrt((x.x*x.x)+(x.y*x.y)+(x.z*x.z)) > 0.00300001 && ireg != -1)
-		//	egsFatal("Exit, amirite?\n");
-		
-		// There seems to be some weird round-off error
+		//egsWarning("%s howfar(%7d,[%e,%e,%e],[%e,%e,%e],%e)\n",getName().c_str(),ireg, x.x, x.y, x.z, u.x, u.y, u.z, t);
+		//egsWarning("\t where r = %e\n",sqrt((x.x*x.x)+(x.y*x.y)+(x.z*x.z)));
 		
 		// Are we in the subgeom?
 		if (ireg >= base->regions())
@@ -303,6 +303,7 @@ public:
 		
 			// Do the howfar call
 			EGS_Float tempT = t;
+			//egsWarning("%s sub->howfar(%7d,[%e,%e,%e],[%e,%e,%e],%e)\n",getName().c_str(),ireg-base->regions(), x.x, x.y, x.z, u.x, u.y, u.z, tempT);
 			int tempReg = sub->howfar(ireg-base->regions(),x,u,tempT,newmed,normal);
 			
 			// If we do leave the subgeom, we want to return the index
@@ -348,6 +349,7 @@ public:
 		{
 			// Determine the path travelled ------------------------------------------------ //
 			EGS_Float tempT = t;
+			//egsWarning("%s base->howfar(%7d,[%e,%e,%e],[%e,%e,%e],%e)\n",getName().c_str(),ireg, x.x, x.y, x.z, u.x, u.y, u.z, tempT);
 			base->howfar(ireg,x,u,tempT); // Get how far it is in temp
 			EGS_Float max = tempT;
 			
@@ -433,12 +435,14 @@ public:
 				{
 					if (newmed && tempReg >= 0)
 						*newmed = sub->medium(tempReg);
+					t = tempT; //REMOVE IF NEEDED
 					//egsWarning("\treturn %d (%f)\n",tempReg+base->regions(),t);
 					//egsWarning("new x should be[%e,%e,%e]\n",x.x+t*u.x,x.y+t*u.y,x.z+t*u.z);
 					if (t<0)
 					{
 						egsWarning("Returning negative t from region %d in base geom t\n", ind);
 						egsWarning("howfar(%7d,[%e,%e,%e],[%e,%e,%e],%e)\n",ireg, x.x, x.y, x.z, u.x, u.y, u.z, t);
+						//egsFatal("Break 1!\n");
 					}
 					return tempReg+base->regions();
 				}
@@ -450,6 +454,7 @@ public:
 			{
 				egsWarning("Returning negative t from region %d in base geom\n", ind);
 				egsWarning("howfar(%7d,[%e,%e,%e],[%e,%e,%e],%e)\n",ireg, x.x, x.y, x.z, u.x, u.y, u.z, t);
+				//egsFatal("Break 2!\n");
 			}
 			if (newmed && tempReg >= 0)
 				*newmed = base->medium(tempReg);
@@ -472,9 +477,7 @@ public:
 				int newReg = sub->isWhere(newX); // see what region we are in
 				if (newReg+1)                    // in subgeom, if its not -1
 				{                                // then return the proper
-					        				     // media and region
-						
-					if (newmed && newReg >= 0)
+					if (newmed && newReg >= 0)   // media and region
 						*newmed = sub->medium(newReg);
 					//egsWarning("\treturn %d (%f)\n",newReg+base->regions(),t);
 					//egsWarning("new x should be[%e,%e,%e]\n",x.x+t*u.x,x.y+t*u.y,x.z+t*u.z);
@@ -489,8 +492,8 @@ public:
 			
 			if (newmed && tempReg >= 0)
 				*newmed = base->medium(tempReg);
-			//egsWarning("\treturn %d (%f)\n",tempReg,t);
-			//egsWarning("new x should be[%e,%e,%e]\n",x.x+t*u.x,x.y+t*u.y,x.z+t*u.z);
+			//egsWarning("\treturn %d (%e)\n",tempReg,t);
+			//egsWarning("new x should be[%e,%e,%e] %e\n",x.x+t*u.x,x.y+t*u.y,x.z+t*u.z);
 			if (t<0)
 			{
 				egsWarning("Returning negative t from region not %d in base geom\n", ind);
@@ -502,35 +505,38 @@ public:
 	
     EGS_Float hownear(int ireg, const EGS_Vector &x)
 	{
-		//egsWarning("hownear(%6d,[%e,%e,%e])\n",ireg, x.x, x.y, x.z);
-		//egsWarning("\tradius of x %e\n",sqrt((x.x*x.x)+(x.y*x.y)+(x.z*x.z)));
-		EGS_Float temp, dist;
+		//egsWarning("%s hownear(%6d,[%e,%e,%e])\n", getName().c_str(), ireg, x.x, x.y, x.z);
+		//egsWarning("\twhere r = %e\n",sqrt((x.x*x.x)+(x.y*x.y)+(x.z*x.z)));
+		EGS_Float temp, dist = base->hownear(ind,x);
 		if (ireg >= base->regions())
 		{
 			sub->setTransformation(closestPoint(x));
 			temp = sub->hownear(ireg-base->regions(),x);
-			dist = base->hownear(ind,x);
 			//egsWarning("\treturn %e\n",sub->hownear(ireg-base->regions(),x));
 			return (temp<dist)?temp:dist;
 		}
 		else if (ireg == ind)
 		{
-			// Get the indices of the lattice point
-			int i, j, k;
-			i = int(x.x/spacing);
-			j = int(x.y/spacing);
-			k = int(x.z/spacing);
-			
-			temp = dist = base->hownear(ireg,x);
-			sub->setTransformation(closestPoint(x));
-			temp = sub->hownear(ireg-base->regions(),x);
-			if (temp < dist)
-				dist = temp;
+			// Check all nearby geometries, in case of weird subgeom shapes
+			EGS_Vector x0[7] = {EGS_Vector(x.x-gap*1.1,x.y,x.z),
+							    EGS_Vector(x.x+gap*1.1,x.y,x.z),
+							    EGS_Vector(x.x,x.y-gap*1.1,x.z),
+							    EGS_Vector(x.x,x.y+gap*1.1,x.z),
+							    EGS_Vector(x.x,x.y,x.z-gap*1.1),
+							    EGS_Vector(x.x,x.y,x.z+gap*1.1),
+							    EGS_Vector(x)};
+			for (int i = 0; i < 7; i++)
+			{
+				sub->setTransformation(closestPoint(x0[i]));
+				temp = sub->hownear(ireg-base->regions(),x);
+				if (temp < dist)
+					dist = temp;
+			}
 			//egsWarning("\treturn %e\n",dist);
 			return dist;
 		}
 		//egsWarning("\treturn %e\n",base->hownear(ireg,x));
-		return base->hownear(ireg,x);
+		return dist;
     };
 
     int getMaxStep() const
