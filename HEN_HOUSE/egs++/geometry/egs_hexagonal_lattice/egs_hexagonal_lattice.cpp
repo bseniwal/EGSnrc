@@ -1,52 +1,7 @@
-/****************************************************************************
- *
- * $Id: egs_hexagonal_lattice.cpp,v 1.8 2007/07/03 17:12:08 iwan Exp $
- *
- *-----------------------------------------------------------------------------
- *
- * EGSnrc C++ class library egspp
- * Copyright (C) 2004-2005 Iwan Kawrakow, National Research Council of Canada
- *                                                                            
- * egspp is free software; you can redistribute it and/or modify      
- * it under the terms of the GNU General Public License as published by      
- * the Free Software Foundation; either version 2 of the License, or         
- * (at your option) any later version.                                       
- *                                                                           
- * egspp is distributed in the hope that it will be useful,           
- * but WITHOUT ANY WARRANTY; without even the implied warranty of            
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the             
- * GNU General Public License for more details.                              
- *                                                                           
- * You should have received a copy of the GNU General Public License         
- * along with this program; if not, write to the Free Software               
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.                 
- *
- * Individuals and entities not willing to embrace the open source idea 
- * can license this software under a closed source license by contacting 
- * Iwan Kawrakow.
- *
- *-----------------------------------------------------------------------------
- *
- *   Contact:
- *
- *   Iwan Kawrakow
- *   Ionizing Radiation Standards, Institute for National Measurement Standards
- *   National Research Council of Canada, Ottawa, ON, K1A 0R6, Canada
- *   voice: ++1 613 993 2197 ext 241
- *   fax:   ++1 613 952 9865
- *   email: iwan@irs.phy.nrc.ca 
- *
- ***************************************************************************/
-
-/*! \file egs_hexagonal_lattice.cpp
- *  \brief A transformed geometry: implementation
- *  \IK
- */
-
-
 #include "egs_hexagonal_lattice.h"
 #include "egs_input.h"
 #include "egs_functions.h"
+
 void EGS_DummyGeometry::setMedia(EGS_Input *,int,const int *) {
 egsWarning("EGS_TransformedGeometry::setMedia: don't use this method. Use the\n"
 " setMedia() methods of the geometry objects that make up this geometry\n");
@@ -161,8 +116,7 @@ EGS_HEXAGONAL_LATTICE_EXPORT EGS_BaseGeometry* createGeometry(EGS_Input *input)
         }
     }
 	
-	// Non-geometry parameters
-	// Region where the fun happens
+	// Non-geometry parameters (ie, lattice part starts here)
 	int ind = -1;
 	i = input->getInputItem("subgeometry index");
     if( !i )
@@ -188,7 +142,6 @@ EGS_HEXAGONAL_LATTICE_EXPORT EGS_BaseGeometry* createGeometry(EGS_Input *input)
 		}
     }
 	
-	// Likelyhood of fun
 	EGS_Float vd = -1;
 	i = input->getInputItem("volumetric density");
     if( !i )
@@ -214,34 +167,7 @@ EGS_HEXAGONAL_LATTICE_EXPORT EGS_BaseGeometry* createGeometry(EGS_Input *input)
 		}
     }
 	
-	// Localization of fun
-	//EGS_Float envelope = -1; // Enveloping radius
-	//i = input->getInputItem("enveloping radius");
-    //if( !i )
-	//{
-    //    egsWarning(
-    //           "createGeometry(hexagonal_lattice): enveloping radius must be defined\n"
-    //           "  using 'enveloping radius = some_radius'\n");
-    //    return 0;
-	//}
-	//else
-	//{
-	//	int err = i->getInput("enveloping radius",envelope);
-    //    delete i;
-    //    if( err )
-	//	{
-    //        egsWarning("createGeometry(hexagonal_lattice): missing/incorrect 'enveloping radius' input\n"); return 0;
-    //    }
-    //    else if (envelope <= 0) // Not a real distance
-	//	{
-    //        egsWarning("createGeometry(hexagonal_lattice): enveloping radius"
-    //                   " is not valid, must be greater than zero\n");
-	//		return 0;
-	//	}
-	//}
-	
-	// Maximization of fun
-	EGS_Float width = -1; // largest spacing
+	EGS_Float width = -1; // largest spacing, an arbitrary variable for egs_view purposes for too many howfar calls
 	i = input->getInputItem("largest spacing");
     if( !i )
 	{

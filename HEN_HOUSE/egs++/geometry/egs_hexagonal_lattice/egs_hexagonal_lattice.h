@@ -296,6 +296,13 @@ public:
 		//egsWarning("%s howfar(%7d,[%e,%e,%e],[%e,%e,%e],%e)\n",getName().c_str(),ireg, x.x, x.y, x.z, u.x, u.y, u.z, t);
 		//egsWarning("\t where r = %e\n",sqrt((x.x*x.x)+(x.y*x.y)+(x.z*x.z)));
 		
+		// Catch t=0 exception, which causes issues when making a lattice of lattices
+		if (t < epsilon)
+		{
+			t = 0.0;
+			return ireg;
+		}
+		
 		// Are we in the subgeom?
 		if (ireg >= base->regions())
 		{
@@ -343,6 +350,7 @@ public:
 				egsWarning("Returning negative t from subgeom\n");
 				egsWarning("howfar(%7d,[%e,%e,%e],[%e,%e,%e],%e)\n",ireg, x.x, x.y, x.z, u.x, u.y, u.z, t);
 			}
+			//egsWarning("\treturn %d (%e)\n",tempReg,t);
 			return tempReg+base->regions();
 		}
 		else if (ireg == ind) // If we are in the region that could contain subgeoms
@@ -485,6 +493,7 @@ public:
 					{
 						egsWarning("Returning negative t from region not %d in base geom\n", ind);
 						egsWarning("howfar(%7d,[%e,%e,%e],[%e,%e,%e],%e)\n",ireg, x.x, x.y, x.z, u.x, u.y, u.z, t);
+						//egsFatal("Break 1!\n");
 					}
 					return newReg + base->regions();
 				}
@@ -498,6 +507,7 @@ public:
 			{
 				egsWarning("Returning negative t from region not %d in base geom\n", ind);
 				egsWarning("howfar(%7d,[%e,%e,%e],[%e,%e,%e],%e)\n",ireg, x.x, x.y, x.z, u.x, u.y, u.z, t);
+				//egsFatal("Break 2!\n");
 			}
 			return tempReg;
 		}
@@ -518,6 +528,7 @@ public:
 		else if (ireg == ind)
 		{
 			// Check all nearby geometries, in case of weird subgeom shapes
+			// with a 10% increased spacing/gap buffer to avoid roundoff
 			EGS_Vector x0[7] = {EGS_Vector(x.x-gap*1.1,x.y,x.z),
 							    EGS_Vector(x.x+gap*1.1,x.y,x.z),
 							    EGS_Vector(x.x,x.y-gap*1.1,x.z),
