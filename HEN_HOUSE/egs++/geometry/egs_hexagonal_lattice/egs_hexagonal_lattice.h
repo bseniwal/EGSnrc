@@ -443,7 +443,6 @@ public:
 				{
 					if (newmed && tempReg >= 0)
 						*newmed = sub->medium(tempReg);
-					t = tempT; //REMOVE IF NEEDED
 					//egsWarning("\treturn %d (%f)\n",tempReg+base->regions(),t);
 					//egsWarning("new x should be[%e,%e,%e]\n",x.x+t*u.x,x.y+t*u.y,x.z+t*u.z);
 					if (t<0)
