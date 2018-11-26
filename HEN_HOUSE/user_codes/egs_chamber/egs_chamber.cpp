@@ -724,6 +724,7 @@ private:
 	vector<int>  n_cavity_regions; // stores the size of cavity_regions int[]
     vector<int*>  cavity_regions; // stores as many regions as doses_Martinov
 	                              // stores dose
+	
 	bool *multiFlag_Martinov;
 	// Martinov Stop  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //  
 	// Martinov Start ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
@@ -739,7 +740,6 @@ private:
 
     EGS_Float        fsplit;    // photon splitting number
     EGS_Float        fspliti;   // inverse photon splitting number
-    int              csplit;    // radiative splitting number
 
     /*! Range rejection flag
       If set to 0, no range rejection is used
@@ -885,7 +885,7 @@ void EGS_ChamberApplication::describeUserCode() const {
 };
 
 void EGS_ChamberApplication::describeSimulation() {
-    EGS_AdvancedApplication::describeSimulation();
+    //Martin removed because his geometry names were too long//EGS_AdvancedApplication::describeSimulation();
     egsInformation("Variance reduction\n"
             "====================================================\n");
     egsInformation("Photon splitting = ");
@@ -1020,8 +1020,8 @@ int EGS_ChamberApplication::initScoring() {
         //
         // ******** radiative event splitting
         //
-        csplit=1;
-        if( !vr->getInput("radiative splitting", csplit) && csplit > 1) {
+         int csplit=1;
+         if( !vr->getInput("radiative splitting", csplit) && csplit > 1) {
             egsInformation("\n => initScoring: splitting radiative events %d times ...\n", csplit);
            the_egsvr->nbr_split = csplit;
         }
@@ -1558,7 +1558,7 @@ int EGS_ChamberApplication::initScoring() {
 					if ((*doses_Martinov)[i]->regions() != (*masses_Martinov)[i]->size())
 						tempFlag_Martinov++;
 					
-			// if we have any discrepencies, spit out error
+			// if we have any discrepancies, spit out error
 			if (tempFlag_Martinov)
 				egsFatal("initScoring: Number of regions and masses "
 			             "for cavity region/mass do not match, which"
@@ -2481,27 +2481,30 @@ int EGS_ChamberApplication::simulateSingleShower() {
     EGS_Vector x,u;
 	
 	// Martin rndm output/input debug
-	//static int pencilVester = 0;
+	//static int histCounter = 0;
 	//static int flag = 1;
-	//if (0 == pencilVester++)
+	//static int histSteps = 100;
+	//static int floor = 200000;
+	//if (0 == histCounter)
 	//{
 	//	istream *data_in;
 	//	string ifile = "/home/martinov/egsnrc/egs_chamber/RNG_seedState.rng";
 	//	data_in = new ifstream(ifile.c_str());
-	//	if( !(*data_in)) egsWarning("\nDebug: failed to open %s for writing\n",ifile.c_str());
+	//	if( !(*data_in)) egsWarning("\nDebug: failed to open %s for reading\n",ifile.c_str());
 	//	else {rndm->setState(*data_in); flag--;}
 	//}
-	//if (((pencilVester)%100 == 0) && flag)
+	//histCounter++;
+	//if (((histCounter)%histSteps == 0) && flag && histCounter > floor)
 	//{
 	//	ostream *data_out;
 	//	string ofile = "/home/martinov/egsnrc/egs_chamber/RNG_seedState.rng";
 	//	data_out = new ofstream(ofile.c_str());
 	//	if( !(*data_out)) egsFatal("\nDebug: failed to open %s for writing\n",ofile.c_str());
-	//	else {rndm->storeState(*data_out); egsWarning("\nDebug: output RNG state at %d history\n",pencilVester) ;}
+	//	else {rndm->storeState(*data_out); egsWarning("\nDebug: output RNG state at %d history\n",histCounter) ;}
 	//}
 	
-    the_egsvr->nbr_split = csplit;
-    current_case = source->getNextParticle(rndm,p.q,p.latch,p.E,p.wt,x,u);
+	
+	current_case = source->getNextParticle(rndm,p.q,p.latch,p.E,p.wt,x,u);
     //egsInformation("Got particle: q=%d E=%g wt=%g latch=%d x=(%g,%g,%g) u=(%g,%g,%g)\n",p.q,p.E,p.wt,p.latch,x.x,x.y,x.z,u.x,u.y,u.z);
     int err = startNewShower(); if( err ) return err;
     //*HB_start************************
@@ -3119,7 +3122,7 @@ void EGS_ChamberApplication::outputResults() {
 				
 				// normalize to Gy per history
 				norm_Martinov /= (*(*masses_Martinov)[i])[j];
-				
+				//egsInformation("%0.10e\n",norm_Martinov);
 				// output region number with dose and uncertainty, using the same
 				// precision as above
 				egsInformation("\tRegion %4d     %10.4le +/- %-7.3lf%c\n",cavity_regions[i][j],r_Martinov*norm_Martinov,dr_Martinov,c);
@@ -3244,8 +3247,18 @@ void EGS_ChamberApplication::selectPhotonMFP(EGS_Float &dpmfp) {
         mfp_old = mfp_old + mfp;
         while(1) {
             EGS_Float tstep = mfp*gmfp; int newmed;
-			//martin debug
-			//cout << "Flag!\n";
+			// Martin debug
+			//cout << "\nMortran call setup\n";
+			//cout << "\tthe_stack->E[0]     " << int((p.q) ? p.E + the_useful->rm : p.E) << "\n";
+			//cout << "\tthe_stack->x[0]     " << p.x.x << " " << p.x.y << " " << p.x.z << "\n";
+			//cout << "\tthe_stack->u[0]     " << p.u.x << " " << p.u.y << " " << p.u.z << "\n";
+			//cout << "\tthe_stack->dnear[0] " << 0 << "\n";
+			//cout << "\tthe_stack->wt[0]    " << p.wt << "\n";
+			//cout << "\tthe_stack->ir[0]    " << p.ir + 2 << "\n";
+			//cout << "\tthe_stack->iq[0]    " << p.q << "\n";
+			//cout << "\tthe_stack->latch[0] " << p.latch << "\n";
+			//cout << "\tthe_stack->np       " << 1 << "\n"; std::cout.flush();
+						
             int inew = geometry->howfar(ireg,x,u,tstep,&newmed);
             if( inew < 0 ) { --the_stack->np; return; }
             x += u*tstep;
