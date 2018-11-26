@@ -293,7 +293,7 @@ public:
 	// This is where things get messy, this function will be trimodal, whether we are in non-ind base, ind base or sub
     int howfar(int ireg, const EGS_Vector &x, const EGS_Vector &u, EGS_Float &t, int *newmed=0, EGS_Vector *normal=0)
 	{
-		/**/egsWarning("%s howfar(%7d,[%e,%e,%e],[%e,%e,%e],%e)\n",getName().c_str(),ireg, x.x, x.y, x.z, u.x, u.y, u.z, t);
+		//egsWarning("%s howfar(%7d,[%e,%e,%e],[%e,%e,%e],%e)\n",getName().c_str(),ireg, x.x, x.y, x.z, u.x, u.y, u.z, t);
 		
 		// Catch t=0 exception, which sometimes causes issues when making a lattice of lattices
 		if (t < epsilon)
@@ -309,7 +309,7 @@ public:
 		
 			// Do the howfar call
 			EGS_Float tempT = t;
-			/**/{EGS_Vector xt(x); sub->T.inverseTransform(xt);egsWarning("%s sub->howfar(%7d,[%e,%e,%e],[%e,%e,%e],%e)\n",getName().c_str(),ireg-base->regions(), xt.x, xt.y, xt.z, u.x, u.y, u.z, tempT);}
+			//{EGS_Vector xt(x); sub->T.inverseTransform(xt);egsWarning("%s sub->howfar(%7d,[%e,%e,%e],[%e,%e,%e],%e)\n",getName().c_str(),ireg-base->regions(), xt.x, xt.y, xt.z, u.x, u.y, u.z, tempT);}
 			int tempReg = sub->howfar(ireg-base->regions(),x,u,tempT,newmed,normal);
 			
 			// If we do leave the subgeom, we want to return the index
@@ -321,26 +321,26 @@ public:
 			{
 				t = tempT;				
 				
-				/**/egsWarning("\tbase->howfar(%6d, [%e,%e,%e], [%e,%e,%e], %e)\n",ind, x.x, x.y, x.z, u.x, u.y, u.z, t);
+				//egsWarning("\tbase->howfar(%6d, [%e,%e,%e], [%e,%e,%e], %e)\n",ind, x.x, x.y, x.z, u.x, u.y, u.z, t);
 				tempReg = base->howfar(ind,x,u,t,0,normal);
 				if (newmed && tempReg >= 0)
 					*newmed = base->medium(tempReg);
-				/**/egsWarning("\treturn %d (%e)\n",tempReg,t);
-				/**/egsWarning("\tnew x should be [%e,%e,%e]\n",x.x+t*u.x,x.y+t*u.y,x.z+t*u.z);
+				//egsWarning("\treturn %d (%e)\n",tempReg,t);
+				//egsWarning("\tnew x should be [%e,%e,%e]\n",x.x+t*u.x,x.y+t*u.y,x.z+t*u.z);
 				
 				if (t<0)
 				{
 					egsWarning("Returning negative t from subgeom of %s\n",getName().c_str());
 					egsWarning("howfar(%7d,[%e,%e,%e],[%e,%e,%e],%e)\n",ireg, x.x, x.y, x.z, u.x, u.y, u.z, t);
-					/**/egsFatal("Break 1!\n");
+					//egsFatal("Break 1!\n");
 				}
 				return tempReg;
 			}
 			
 			if (!(tempReg+1)) // If we leave sub geom entirely
 			{
-				/**/egsWarning("\treturn %d (%e)\n",tempReg+base->regions(),t);
-				/**/egsWarning("\tnew x should be [%e,%e,%e]\n",x.x+t*u.x,x.y+t*u.y,x.z+t*u.z);
+				//egsWarning("\treturn %d (%e)\n",tempReg+base->regions(),t);
+				//egsWarning("\tnew x should be [%e,%e,%e]\n",x.x+t*u.x,x.y+t*u.y,x.z+t*u.z);
 				if (newmed)
 					*newmed = base->medium(ind);
 				t = tempT;
@@ -349,13 +349,13 @@ public:
 			
 			// else we stay in sub geom
 			t = tempT;
-			/**/egsWarning("\treturn %d (%e)\n",tempReg,t);
-			/**/egsWarning("\tnew x should be [%e,%e,%e]\n",x.x+t*u.x,x.y+t*u.y,x.z+t*u.z);			
+			//egsWarning("\treturn %d (%e)\n",tempReg,t);
+			//egsWarning("\tnew x should be [%e,%e,%e]\n",x.x+t*u.x,x.y+t*u.y,x.z+t*u.z);			
 			if (t<0)
 			{
 				egsWarning("Returning negative t from subgeom of %s\n",getName().c_str());
 				egsWarning("howfar(%7d,[%e,%e,%e],[%e,%e,%e],%e)\n",ireg, x.x, x.y, x.z, u.x, u.y, u.z, t);
-				/**/egsFatal("Break 2!\n");
+				//egsFatal("Break 2!\n");
 			}
 			return tempReg+base->regions();
 		}
@@ -363,7 +363,7 @@ public:
 		{
 			// Determine the path travelled ------------------------------------------------ //
 			EGS_Float tempT = t;
-			/**/egsWarning("%s base->howfar(%7d,[%e,%e,%e],[%e,%e,%e],%e)\n",getName().c_str(),ireg, x.x, x.y, x.z, u.x, u.y, u.z, tempT);
+			//egsWarning("%s base->howfar(%7d,[%e,%e,%e],[%e,%e,%e],%e)\n",getName().c_str(),ireg, x.x, x.y, x.z, u.x, u.y, u.z, tempT);
 			base->howfar(ireg,x,u,tempT); // Get how far it is in temp
 			EGS_Float max = tempT;
 			
@@ -455,7 +455,7 @@ public:
 					{
 						egsWarning("Returning negative t from region %d in base geom of %s\n", ind, getName().c_str());
 						egsWarning("howfar(%7d,[%e,%e,%e],[%e,%e,%e],%e)\n",ireg, x.x, x.y, x.z, u.x, u.y, u.z, t);
-						/**/egsFatal("Break 1!\n");
+						//egsFatal("Break 1!\n");
 					}
 					return tempReg+base->regions();
 				}
@@ -467,7 +467,7 @@ public:
 			{
 				egsWarning("Returning negative t from region %d in base geom of %s\n", ind, getName().c_str());
 				egsWarning("howfar(%7d,[%e,%e,%e],[%e,%e,%e],%e)\n",ireg, x.x, x.y, x.z, u.x, u.y, u.z, t);
-				/**/egsFatal("Break 2!\n");
+				//egsFatal("Break 2!\n");
 			}
 			if (newmed && tempReg >= 0)
 				*newmed = base->medium(tempReg);
@@ -499,7 +499,7 @@ public:
 					{
 						egsWarning("Returning negative t from region not %d in base geom of %s\n", ind, getName().c_str());
 						egsWarning("howfar(%7d,[%e,%e,%e],[%e,%e,%e])\n",ireg, x.x, x.y, x.z, u.x, u.y, u.z, t);
-						/**/egsFatal("Break 1!\n");
+						//egsFatal("Break 1!\n");
 					}
 					return newReg + base->regions();
 				}
@@ -513,7 +513,7 @@ public:
 			{
 				egsWarning("Returning negative t from region not %d in base geom of %s\n", ind, getName().c_str());
 				egsWarning("howfar(%7d,[%e,%e,%e],[%e,%e,%e],%e)\n",ireg, x.x, x.y, x.z, u.x, u.y, u.z, t);
-				/**/egsFatal("Break 2!\n");
+				//egsFatal("Break 2!\n");
 			}
 			return tempReg;
 		}
